@@ -24,7 +24,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.ui.component.fbutton.FloatingBottomBar
@@ -64,23 +63,36 @@ class MainActivity : ComponentActivity() {
                     drawContent()
                 }
 
-                Scaffold(
-                    bottomBar = {
-                        val mainState = LocalMainPagerState.current
-                        if (blurBackdrop != null) {
-                            Box(
-                                modifier = Modifier.layerBackdrop(blurBackdrop)
-                            ) {
+                // ═══ 状态提升到 Scaffold 外部 ═══
+                // bottomBar lambda 在 Scaffold 内部执行，比 content 早，
+                // 所以 pager state 必须在 Scaffold 之前创建和提供。
+                val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
+                val duJiPagerState = rememberDuJiPagerState(pagerState)
+
+                val settledPage = pagerState.settledPage
+                LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
+                val currentPage = pagerState.currentPage
+                LaunchedEffect(currentPage) { duJiPagerState.syncPage() }
+
+                CompositionLocalProvider(LocalMainPagerState provides duJiPagerState) {
+                    Scaffold(
+                        bottomBar = {
+                            val barModifier = if (blurBackdrop != null) {
+                                Modifier.layerBackdrop(blurBackdrop)
+                            } else {
+                                Modifier
+                            }
+                            Box(modifier = barModifier) {
                                 FloatingBottomBar(
-                                    selectedIndex = { mainState.selectedPage },
-                                    onSelected = { mainState.animateToPage(it) },
+                                    selectedIndex = { duJiPagerState.selectedPage },
+                                    onSelected = { duJiPagerState.animateToPage(it) },
                                     backdrop = backdrop,
                                     tabsCount = bottomNavItems.size,
                                     isBlurEnabled = enableBlur,
                                 ) {
                                     bottomNavItems.forEachIndexed { index, item ->
                                         FloatingBottomBarItem(
-                                            onClick = { mainState.animateToPage(index) },
+                                            onClick = { duJiPagerState.animateToPage(index) },
                                             modifier = Modifier.weight(1f)
                                         ) {
                                             Icon(
@@ -101,9 +113,23 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+                    ) { innerPadding ->
+                        // Pager 内容
+                        val bottomPadding = innerPadding.calculateBottomPadding()
+                        val pagerPadding = PaddingValues(bottom = bottomPadding)
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(pagerPadding)
+                        ) { page ->
+                            when (page) {
+                                0 -> MyItemsScreen()
+                                1 -> ThoseDaysScreen()
+                                2 -> SettingsScreen()
+                            }
+                        }
                     }
-                ) { innerPadding ->
-                    MainScreen(bottomPadding = innerPadding.calculateBottomPadding())
                 }
             }
         }
@@ -181,30 +207,4 @@ private fun rememberDuJiPagerState(
     coroutineScope: CoroutineScope = rememberCoroutineScope()
 ): DuJiPagerState = remember(pagerState, coroutineScope) { DuJiPagerState(pagerState, coroutineScope) }
 
-@Composable
-fun MainScreen(bottomPadding: Dp = 0.dp) {
-    val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
-    val duJiPagerState = rememberDuJiPagerState(pagerState)
 
-    val settledPage = pagerState.settledPage
-    LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
-    val currentPage = pagerState.currentPage
-    LaunchedEffect(currentPage) { duJiPagerState.syncPage() }
-
-    CompositionLocalProvider(LocalMainPagerState provides duJiPagerState) {
-        val pagerPadding = PaddingValues(bottom = bottomPadding)
-
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(pagerPadding)
-        ) { page ->
-            when (page) {
-                0 -> MyItemsScreen()
-                1 -> ThoseDaysScreen()
-                2 -> SettingsScreen()
-            }
-        }
-    }
-}
