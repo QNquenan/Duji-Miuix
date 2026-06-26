@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +14,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -20,34 +22,88 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.quenan.duji.ui.component.fbutton.FloatingBottomBar
+import com.quenan.duji.ui.component.fbutton.FloatingBottomBarItem
 import com.quenan.duji.ui.screen.MyItemsScreen
 import com.quenan.duji.ui.screen.SettingsScreen
 import com.quenan.duji.ui.screen.ThoseDaysScreen
 import com.quenan.duji.ui.theme.DuJiTheme
+import com.quenan.duji.ui.theme.LocalEnableBlur
+import com.quenan.duji.ui.util.rememberBlurBackdrop
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.All
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Years
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            DuJiTheme {
+            DuJiTheme(enableBlur = true) {
+                val enableBlur = LocalEnableBlur.current
+                val surfaceColor = MiuixTheme.colorScheme.surface
+                val blurBackdrop = rememberBlurBackdrop(enableBlur)
+                val backdrop = rememberLayerBackdrop {
+                    drawRect(surfaceColor)
+                    drawContent()
+                }
+
                 Scaffold(
-                    popupHost = { }
-                ) {
-                    MainScreen()
+                    bottomBar = {
+                        val mainState = LocalMainPagerState.current
+                        if (blurBackdrop != null) {
+                            Box(
+                                modifier = Modifier.layerBackdrop(blurBackdrop)
+                            ) {
+                                FloatingBottomBar(
+                                    selectedIndex = { mainState.selectedPage },
+                                    onSelected = { mainState.animateToPage(it) },
+                                    backdrop = backdrop,
+                                    tabsCount = bottomNavItems.size,
+                                    isBlurEnabled = enableBlur,
+                                ) {
+                                    bottomNavItems.forEachIndexed { index, item ->
+                                        FloatingBottomBarItem(
+                                            onClick = { mainState.animateToPage(index) },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Icon(
+                                                imageVector = item.icon,
+                                                contentDescription = item.label,
+                                                tint = MiuixTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = item.label,
+                                                fontSize = 11.sp,
+                                                lineHeight = 14.sp,
+                                                color = MiuixTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ) { innerPadding ->
+                    MainScreen(bottomPadding = innerPadding.calculateBottomPadding())
                 }
             }
         }
@@ -65,27 +121,22 @@ private val bottomNavItems = listOf(
     BottomNavItem("设置", MiuixIcons.Settings),
 )
 
-/**
- * KernelSU Miuix 版 —— 自定义 Pager 状态管理
- * 与 BottomBar.kt 中的 MainPagerState 完全一致
- */
+// ═══════════════════════════════════════════
+//  页面状态管理（来自 KernelSU MainPagerState）
+// ═══════════════════════════════════════════
 class DuJiPagerState(
     val pagerState: PagerState,
     private val coroutineScope: CoroutineScope
 ) {
     var selectedPage by mutableIntStateOf(pagerState.currentPage)
         private set
-
     var isNavigating by mutableStateOf(false)
         private set
-
     private var navJob: Job? = null
 
     fun animateToPage(targetIndex: Int) {
         if (targetIndex == selectedPage) return
-
         navJob?.cancel()
-
         selectedPage = targetIndex
         isNavigating = true
 
@@ -122,57 +173,27 @@ class DuJiPagerState(
     }
 }
 
+val LocalMainPagerState = staticCompositionLocalOf<DuJiPagerState> { error("Not provided") }
+
 @Composable
 private fun rememberDuJiPagerState(
     pagerState: PagerState,
     coroutineScope: CoroutineScope = rememberCoroutineScope()
-): DuJiPagerState {
-    return remember(pagerState, coroutineScope) {
-        DuJiPagerState(pagerState, coroutineScope)
-    }
-}
+): DuJiPagerState = remember(pagerState, coroutineScope) { DuJiPagerState(pagerState, coroutineScope) }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(bottomPadding: Dp = 0.dp) {
     val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
     val duJiPagerState = rememberDuJiPagerState(pagerState)
 
-    // KernelSU 方式：用 LaunchedEffect 监听滑动后的落定页同步 selectedPage
     val settledPage = pagerState.settledPage
-    LaunchedEffect(settledPage) {
-        duJiPagerState.syncPage()
-    }
-
+    LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
     val currentPage = pagerState.currentPage
-    LaunchedEffect(currentPage) {
-        duJiPagerState.syncPage()
-    }
+    LaunchedEffect(currentPage) { duJiPagerState.syncPage() }
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                bottomNavItems.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        modifier = Modifier.weight(1f),
-                        icon = item.icon,
-                        label = item.label,
-                        selected = duJiPagerState.selectedPage == index,
-                        onClick = {
-                            duJiPagerState.animateToPage(index)
-                        }
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
-        // 只取底部 padding（NavigationBar 高度），顶部由各页面自己的 Scaffold 处理
-        val bottomPadding = innerPadding.calculateBottomPadding()
-        val pagerPadding = PaddingValues(
-            bottom = bottomPadding,
-            top = 0.dp,
-            start = 0.dp,
-            end = 0.dp
-        )
+    CompositionLocalProvider(LocalMainPagerState provides duJiPagerState) {
+        val pagerPadding = PaddingValues(bottom = bottomPadding)
+
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
