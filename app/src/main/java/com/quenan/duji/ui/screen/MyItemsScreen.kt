@@ -77,9 +77,12 @@ fun MyItemsScreen() {
     var itemNote by remember { mutableStateOf("") }
     var showDateDialog by remember { mutableStateOf(false) }
     val calendar = remember { Calendar.getInstance() }
-    var selectedYear by remember { mutableIntStateOf(calendar.get(Calendar.YEAR)) }
-    var selectedMonth by remember { mutableIntStateOf(calendar.get(Calendar.MONTH) + 1) }
-    var selectedDay by remember { mutableIntStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
+    val currentYear = calendar.get(Calendar.YEAR)
+    val currentMonth = calendar.get(Calendar.MONTH) + 1
+    val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
+    var selectedYear by remember { mutableIntStateOf(currentYear) }
+    var selectedMonth by remember { mutableIntStateOf(currentMonth) }
+    var selectedDay by remember { mutableIntStateOf(currentDay) }
 
     // 监听滚动方向：向下滚隐藏 FAB，向上滚显示 FAB
     @OptIn(FlowPreview::class)
@@ -195,7 +198,8 @@ fun MyItemsScreen() {
                     TextField(
                         value = itemName,
                         onValueChange = { itemName = it },
-                        label = "请输入物品名称",
+                        label = "名称",
+                        useLabelAsPlaceholder = true,
                     )
 
                     // 价格
@@ -203,7 +207,8 @@ fun MyItemsScreen() {
                     TextField(
                         value = itemPrice,
                         onValueChange = { itemPrice = it },
-                        label = "请输入价格",
+                        label = "价格",
+                        useLabelAsPlaceholder = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
 
@@ -234,7 +239,8 @@ fun MyItemsScreen() {
                     TextField(
                         value = itemNote,
                         onValueChange = { itemNote = it },
-                        label = "请输入备注",
+                        label = "备注",
+                        useLabelAsPlaceholder = true,
                         singleLine = false,
                         minLines = 3,
                         maxLines = 5,
@@ -328,7 +334,12 @@ fun MyItemsScreen() {
                     ) {
                         TextButton(
                             text = "取消",
-                            onClick = { showDateDialog = false },
+                            onClick = {
+                                selectedYear = currentYear
+                                selectedMonth = currentMonth
+                                selectedDay = currentDay
+                                showDateDialog = false
+                            },
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(
