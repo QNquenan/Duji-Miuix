@@ -279,10 +279,11 @@ fun MyItemsScreen() {
                 onDismissRequest = { showIconDialog = false },
             ) {
                 val commonIcons = listOf(
-                    "⌚️", "📱", "💻", "🖥️", "🎧",
-                    "🎮", "🖱️", "⌨️", "🖨️", "📷",
-                    "📹", "🎥", "📺", "📻", "🎙️",
-                    "🎚️", "🎛️", "🧭", "⏰", "⏱️"
+                    "📱", "⌚️", "🖥️", "🖨️", "🖱️",
+                    "🧭", "🎮", "📺", "🎧", "💻",
+                    "⌨️", "📷", "🎛️", "🖊️", "📦",
+                    "🔑", "💡", "🎒", "👟", "👕",
+                    "🕶️", "🧢", "💍", "🎸"
                 )
                 var tempSelectedIcon by remember { mutableStateOf(selectedIcon) }
 
