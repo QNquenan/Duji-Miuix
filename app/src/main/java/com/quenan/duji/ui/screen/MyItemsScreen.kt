@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +48,8 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NumberPicker
+import top.yukonga.miuix.kmp.basic.NumberPickerColors
+import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Surface
@@ -198,18 +201,25 @@ fun MyItemsScreen() {
                     TextField(
                         value = itemName,
                         onValueChange = { itemName = it },
-                        label = "名称",
+                        label = "请输入名称",
                         useLabelAsPlaceholder = true,
+                        maxLines = 1,
                     )
 
                     // 价格
                     SmallTitle(text = "价格", modifier = Modifier.fillMaxWidth())
                     TextField(
                         value = itemPrice,
-                        onValueChange = { itemPrice = it },
-                        label = "价格",
+                        onValueChange = {
+                            if (it.all { char -> char.isDigit() }) {
+                                itemPrice = it
+                            }
+                        },
+                        label = "请输入价格",
                         useLabelAsPlaceholder = true,
                         modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                        keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                     )
 
                     // 购买日期
@@ -284,6 +294,9 @@ fun MyItemsScreen() {
                                 wrapAround = true,
                                 modifier = Modifier.width(100.dp),
                                 label = { it.toString() },
+                                colors = NumberPickerDefaults.colors(
+                                    selectedTextColor = MiuixTheme.colorScheme.primary,
+                                ),
                             )
                         }
 
@@ -303,6 +316,9 @@ fun MyItemsScreen() {
                                 wrapAround = true,
                                 modifier = Modifier.width(80.dp),
                                 label = { it.toString().padStart(2, '0') },
+                                colors = NumberPickerDefaults.colors(
+                                    selectedTextColor = MiuixTheme.colorScheme.primary,
+                                ),
                             )
                         }
 
@@ -322,6 +338,9 @@ fun MyItemsScreen() {
                                 wrapAround = true,
                                 modifier = Modifier.width(80.dp),
                                 label = { it.toString().padStart(2, '0') },
+                                colors = NumberPickerDefaults.colors(
+                                    selectedTextColor = MiuixTheme.colorScheme.primary,
+                                ),
                             )
                         }
                     }
