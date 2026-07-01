@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -43,10 +44,12 @@ import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -71,6 +74,9 @@ fun MyItemsScreen() {
     var itemDate by remember { mutableStateOf("") }
     var itemNote by remember { mutableStateOf("") }
     var showDateDialog by remember { mutableStateOf(false) }
+    var selectedYear by remember { mutableIntStateOf(2024) }
+    var selectedMonth by remember { mutableIntStateOf(1) }
+    var selectedDay by remember { mutableIntStateOf(1) }
 
     // 监听滚动方向：向下滚隐藏 FAB，向上滚显示 FAB
     @OptIn(FlowPreview::class)
@@ -240,16 +246,95 @@ fun MyItemsScreen() {
             // 购买日期选择对话框
             WindowDialog(
                 title = "选择日期",
-                summary = "test",
                 show = showDateDialog,
                 onDismissRequest = { showDateDialog = false },
             ) {
                 val dismiss = LocalDismissState.current
-                Text(
-                    text = "test",
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    color = MiuixTheme.colorScheme.onBackground,
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        // 年
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = "年",
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            )
+                            NumberPicker(
+                                value = selectedYear,
+                                onValueChange = { selectedYear = it },
+                                range = 1900..2100,
+                                wrapAround = true,
+                                modifier = Modifier.width(80.dp),
+                            )
+                        }
+
+                        // 月
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = "月",
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            )
+                            NumberPicker(
+                                value = selectedMonth,
+                                onValueChange = { selectedMonth = it },
+                                range = 1..12,
+                                wrapAround = true,
+                                modifier = Modifier.width(80.dp),
+                            )
+                        }
+
+                        // 日
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = "日",
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            )
+                            NumberPicker(
+                                value = selectedDay,
+                                onValueChange = { selectedDay = it },
+                                range = 1..31,
+                                wrapAround = true,
+                                modifier = Modifier.width(80.dp),
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TextButton(
+                            text = "取消",
+                            onClick = { showDateDialog = false },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "确定",
+                            onClick = {
+                                itemDate = "$selectedYear-${selectedMonth.toString().padStart(2, '0')}-${selectedDay.toString().padStart(2, '0')}"
+                                showDateDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
         }
     }
