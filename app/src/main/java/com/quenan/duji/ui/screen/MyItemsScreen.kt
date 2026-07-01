@@ -79,6 +79,10 @@ fun MyItemsScreen() {
     var itemDate by remember { mutableStateOf("") }
     var itemNote by remember { mutableStateOf("") }
     var showDateDialog by remember { mutableStateOf(false) }
+    var showIconDialog by remember { mutableStateOf(false) }
+    var showCustomIconDialog by remember { mutableStateOf(false) }
+    var selectedIcon by remember { mutableStateOf("") }
+    var customIconText by remember { mutableStateOf("") }
     val calendar = remember { Calendar.getInstance() }
     val currentYear = calendar.get(Calendar.YEAR)
     val currentMonth = calendar.get(Calendar.MONTH) + 1
@@ -138,7 +142,6 @@ fun MyItemsScreen() {
             ) {
                 FloatingActionButton(
                     onClick = { showBottomSheet = true },
-                    containerColor = Color(0xFF1A1A1A)
                 ) {
                     Icon(
                         imageVector = MiuixIcons.Add,
@@ -191,9 +194,14 @@ fun MyItemsScreen() {
                             .background(
                                 color = Color(0xFF2C2C2E),
                                 shape = RoundedCornerShape(16.dp)
-                            ),
+                            )
+                            .clickable { showIconDialog = true },
                         contentAlignment = Alignment.Center
                     ) {
+                        Text(
+                            text = selectedIcon,
+                            fontSize = 32.sp,
+                        )
                     }
 
                     // 名称
@@ -259,6 +267,132 @@ fun MyItemsScreen() {
 
                     // 底部间距
                     Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+
+            // 图标选择对话框
+            WindowDialog(
+                title = "选择图标",
+                show = showIconDialog,
+                onDismissRequest = { showIconDialog = false },
+            ) {
+                val commonIcons = listOf(
+                    "⌚️", "📱", "💻", "🖥️", "🎧",
+                    "🎮", "🖱️", "⌨️", "🖨️", "📷",
+                    "📹", "🎥", "📺", "📻", "🎙️",
+                    "🎚️", "🎛️", "🧭", "⏰", "⏱️"
+                )
+                var tempSelectedIcon by remember { mutableStateOf(selectedIcon) }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // 5 列网格展示常用图标
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        commonIcons.chunked(5).forEach { rowIcons ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                rowIcons.forEach { icon ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(
+                                                color = if (tempSelectedIcon == icon) MiuixTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            .clickable { tempSelectedIcon = icon },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = icon,
+                                            fontSize = 24.sp,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextButton(
+                            text = "取消",
+                            onClick = { showIconDialog = false },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "自定义",
+                            onClick = {
+                                showIconDialog = false
+                                showCustomIconDialog = true
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "确定",
+                            onClick = {
+                                selectedIcon = tempSelectedIcon
+                                showIconDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
+                }
+            }
+
+            // 自定义图标输入对话框
+            WindowDialog(
+                title = "自定义图标",
+                show = showCustomIconDialog,
+                onDismissRequest = { showCustomIconDialog = false },
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    TextField(
+                        value = customIconText,
+                        onValueChange = { customIconText = it },
+                        label = "输入表情或文字",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextButton(
+                            text = "取消",
+                            onClick = { showCustomIconDialog = false },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "确定",
+                            onClick = {
+                                selectedIcon = customIconText
+                                customIconText = ""
+                                showCustomIconDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
                 }
             }
 
