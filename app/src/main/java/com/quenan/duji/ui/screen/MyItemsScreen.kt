@@ -553,11 +553,11 @@ private fun ItemListCard(
             .fillMaxWidth()
             .border(
                 width = 1.5.dp,
-                color = Color(0xFFD1D1D6),
+                color = MiuixTheme.colorScheme.outline,
                 shape = RoundedCornerShape(16.dp)
             ),
         colors = CardDefaults.defaultColors(
-            color = Color(0xFFF2F2F7)
+            color = MiuixTheme.colorScheme.surfaceContainer
         ),
         insideMargin = PaddingValues(16.dp),
     ) {
@@ -591,12 +591,12 @@ private fun ItemListCard(
                     text = name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MiuixTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = date,
                     fontSize = 13.sp,
-                    color = Color(0xFF8E8E93),
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
                 )
             }
 
@@ -609,12 +609,12 @@ private fun ItemListCard(
                     text = avgPrice,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MiuixTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = totalPrice,
                     fontSize = 13.sp,
-                    color = Color(0xFF8E8E93),
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
                 )
             }
         }
