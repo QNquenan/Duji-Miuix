@@ -192,6 +192,7 @@ fun MyItemsScreen() {
                         modifier = Modifier
                             .size(80.dp)
                             .align(Alignment.CenterHorizontally)
+                            .clip(RoundedCornerShape(16.dp))
                             .background(
                                 color = MiuixTheme.colorScheme.secondaryContainer,
                                 shape = RoundedCornerShape(16.dp)
