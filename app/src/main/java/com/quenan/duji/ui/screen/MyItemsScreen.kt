@@ -65,6 +65,7 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.window.WindowDialog
 
@@ -84,6 +85,7 @@ fun MyItemsScreen() {
     var showCustomIconDialog by remember { mutableStateOf(false) }
     var selectedIcon by remember { mutableStateOf("📦") }
     var customIconText by remember { mutableStateOf("") }
+    var isPinned by remember { mutableStateOf(false) }
     val calendar = remember { Calendar.getInstance() }
     val currentYear = calendar.get(Calendar.YEAR)
     val currentMonth = calendar.get(Calendar.MONTH) + 1
@@ -265,6 +267,13 @@ fun MyItemsScreen() {
                         minLines = 3,
                         maxLines = 5,
                         modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    // 置顶开关
+                    SwitchPreference(
+                        title = "是否置顶",
+                        checked = isPinned,
+                        onCheckedChange = { isPinned = it },
                     )
 
                     // 底部间距
