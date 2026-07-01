@@ -63,6 +63,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.extended.Years
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -549,17 +550,12 @@ private fun ItemListCard(
     totalPrice: String,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.5.dp,
-                color = MiuixTheme.colorScheme.outline,
-                shape = RoundedCornerShape(16.dp)
-            ),
         colors = CardDefaults.defaultColors(
             color = MiuixTheme.colorScheme.surfaceContainer
         ),
         insideMargin = PaddingValues(16.dp),
+        showIndication = true,
+        pressFeedbackType = PressFeedbackType.Tilt
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -593,11 +589,22 @@ private fun ItemListCard(
                     fontWeight = FontWeight.Bold,
                     color = MiuixTheme.colorScheme.onSurface,
                 )
-                Text(
-                    text = date,
-                    fontSize = 13.sp,
-                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Years,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceSecondary
+                    )
+                    Text(
+                        text = date,
+                        fontSize = 13.sp,
+                        color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                    )
+                }
             }
 
             // 右侧价格
