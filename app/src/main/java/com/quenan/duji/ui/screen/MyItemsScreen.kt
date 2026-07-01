@@ -132,6 +132,20 @@ fun MyItemsScreen() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatsCard()
+                ItemListCard(
+                    icon = "📱",
+                    name = "iPhone 15 Pro",
+                    date = "2024-09-22",
+                    avgPrice = "¥18/天",
+                    totalPrice = "¥8999"
+                )
+                ItemListCard(
+                    icon = "💻",
+                    name = "MacBook Air",
+                    date = "2023-06-15",
+                    avgPrice = "¥12/天",
+                    totalPrice = "¥7999"
+                )
             }
 
             // FAB
@@ -271,7 +285,7 @@ fun MyItemsScreen() {
 
                     // 置顶开关
                     SwitchPreference(
-                        title = "是否置顶",
+                        title = "置顶",
                         checked = isPinned,
                         onCheckedChange = { isPinned = it },
                     )
@@ -520,6 +534,84 @@ fun MyItemsScreen() {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItemListCard(
+    icon: String,
+    name: String,
+    date: String,
+    avgPrice: String,
+    totalPrice: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.defaultColors(
+            color = Color(0xFF1C1C1E)
+        ),
+        insideMargin = PaddingValues(16.dp),
+        onClick = { },
+        showIndication = true,
+        pressFeedbackType = PressFeedbackType.Tilt
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 左侧图标
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = MiuixTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = icon,
+                    fontSize = 24.sp,
+                )
+            }
+
+            // 中间信息
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+                Text(
+                    text = date,
+                    fontSize = 13.sp,
+                    color = Color(0xFF8E8E93),
+                )
+            }
+
+            // 右侧价格
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = avgPrice,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+                Text(
+                    text = totalPrice,
+                    fontSize = 13.sp,
+                    color = Color(0xFF8E8E93),
+                )
             }
         }
     }
