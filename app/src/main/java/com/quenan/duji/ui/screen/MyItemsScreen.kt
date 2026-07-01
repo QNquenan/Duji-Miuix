@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -548,16 +549,17 @@ private fun ItemListCard(
     totalPrice: String,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.5.dp,
+                color = Color(0xFFD1D1D6),
+                shape = RoundedCornerShape(16.dp)
+            ),
         colors = CardDefaults.defaultColors(
-            color = Color(0xFFF2F2F7),
-            borderColor = Color(0xFFD1D1D6)
+            color = Color(0xFFF2F2F7)
         ),
-        borderWidth = 1.5.dp,
         insideMargin = PaddingValues(16.dp),
-        onClick = { },
-        showIndication = true,
-        pressFeedbackType = PressFeedbackType.Tilt
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
