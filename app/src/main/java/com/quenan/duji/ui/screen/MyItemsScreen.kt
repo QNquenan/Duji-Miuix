@@ -192,7 +192,7 @@ fun MyItemsScreen() {
                             .size(80.dp)
                             .align(Alignment.CenterHorizontally)
                             .background(
-                                color = Color(0xFF2C2C2E),
+                                color = MiuixTheme.colorScheme.secondaryContainer,
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .clickable { showIconDialog = true },
@@ -300,16 +300,29 @@ fun MyItemsScreen() {
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 rowIcons.forEach { icon ->
+                                    val isSelected = tempSelectedIcon == icon
                                     Box(
                                         modifier = Modifier
                                             .size(48.dp)
                                             .background(
-                                                color = if (tempSelectedIcon == icon) MiuixTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
+                                                color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
                                                 shape = RoundedCornerShape(12.dp)
                                             )
                                             .clickable { tempSelectedIcon = icon },
                                         contentAlignment = Alignment.Center
                                     ) {
+                                        androidx.compose.animation.AnimatedVisibility(
+                                            visible = isSelected,
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(
+                                                        color = MiuixTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    )
+                                            )
+                                        }
                                         Text(
                                             text = icon,
                                             fontSize = 24.sp,
