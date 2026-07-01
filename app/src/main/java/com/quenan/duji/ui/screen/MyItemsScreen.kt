@@ -41,7 +41,13 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.theme.LocalDismissState
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @Composable
 fun MyItemsScreen() {
@@ -49,6 +55,7 @@ fun MyItemsScreen() {
     val scrollState = rememberScrollState()
     var previousScroll by remember { mutableIntStateOf(0) }
     var showFab by remember { mutableStateOf(true) }
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     // 监听滚动方向：向下滚隐藏 FAB，向上滚显示 FAB
     @OptIn(FlowPreview::class)
@@ -100,7 +107,7 @@ fun MyItemsScreen() {
                 exit = slideOutVertically { it }
             ) {
                 FloatingActionButton(
-                    onClick = { /* TODO: 添加物品 */ },
+                    onClick = { showBottomSheet = true },
                     containerColor = Color(0xFF1A1A1A)
                 ) {
                     Icon(
@@ -108,6 +115,55 @@ fun MyItemsScreen() {
                         contentDescription = "添加",
                         tint = Color.White
                     )
+                }
+            }
+
+            // WindowBottomSheet - 点击 FAB 时弹出
+            WindowBottomSheet(
+                show = showBottomSheet,
+                title = "添加物品",
+                startAction = {
+                    val dismiss = LocalDismissState.current
+                    IconButton(onClick = { dismiss?.invoke() }) {
+                        Icon(
+                            imageVector = MiuixIcons.Close,
+                            contentDescription = "关闭",
+                            tint = MiuixTheme.colorScheme.onBackground,
+                        )
+                    }
+                },
+                endAction = {
+                    val dismiss = LocalDismissState.current
+                    IconButton(onClick = { dismiss?.invoke() }) {
+                        Icon(
+                            imageVector = MiuixIcons.Ok,
+                            contentDescription = "确认",
+                            tint = MiuixTheme.colorScheme.onBackground,
+                        )
+                    }
+                },
+                onDismissRequest = { showBottomSheet = false },
+            ) {
+                // BottomSheet 内容区域
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.defaultColors(
+                            color = Color(0xFF1C1C1E)
+                        ),
+                        insideMargin = PaddingValues(20.dp),
+                    ) {
+                        Text(
+                            text = "请在下方填写物品信息",
+                            fontSize = 14.sp,
+                            color = Color(0xFF8E8E93)
+                        )
+                    }
                 }
             }
         }
