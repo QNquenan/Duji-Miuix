@@ -550,8 +550,10 @@ private fun ItemListCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.defaultColors(
-            color = Color(0xFF262626)
+            color = Color(0xFFF2F2F7),
+            borderColor = Color(0xFFD1D1D6)
         ),
+        borderWidth = 1.5.dp,
         insideMargin = PaddingValues(16.dp),
         onClick = { },
         showIndication = true,
