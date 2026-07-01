@@ -45,6 +45,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -199,18 +200,24 @@ fun MyItemsScreen() {
 
                     // 购买日期
                     SmallTitle(text = "购买日期", modifier = Modifier.fillMaxWidth())
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showDateDialog = true }
+                    Surface(
+                        onClick = { showDateDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MiuixTheme.colorScheme.secondaryContainer,
                     ) {
-                        TextField(
-                            value = itemDate,
-                            onValueChange = { },
-                            label = "请选择购买日期",
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(
+                                text = if (itemDate.isEmpty()) "请选择购买日期" else itemDate,
+                                color = if (itemDate.isEmpty()) MiuixTheme.colorScheme.onSecondaryContainer else MiuixTheme.colorScheme.onBackground,
+                                style = MiuixTheme.textStyles.main,
+                            )
+                        }
                     }
 
                     // 备注
