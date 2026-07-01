@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -169,6 +171,7 @@ fun MyItemsScreen() {
                     Box(
                         modifier = Modifier
                             .size(80.dp)
+                            .align(Alignment.CenterHorizontally)
                             .background(
                                 color = Color(0xFF2C2C2E),
                                 shape = RoundedCornerShape(16.dp)
@@ -178,7 +181,7 @@ fun MyItemsScreen() {
                     }
 
                     // 名称
-                    SmallTitle(text = "名称")
+                    SmallTitle(text = "名称", modifier = Modifier.fillMaxWidth())
                     TextField(
                         value = itemName,
                         onValueChange = { itemName = it },
@@ -186,25 +189,32 @@ fun MyItemsScreen() {
                     )
 
                     // 价格
-                    SmallTitle(text = "价格")
+                    SmallTitle(text = "价格", modifier = Modifier.fillMaxWidth())
                     TextField(
                         value = itemPrice,
                         onValueChange = { itemPrice = it },
                         label = "请输入价格",
+                        modifier = Modifier.fillMaxWidth(),
                     )
 
                     // 购买日期
-                    SmallTitle(text = "购买日期")
-                    TextField(
-                        value = itemDate,
-                        onValueChange = { },
-                        label = "请选择购买日期",
-                        readOnly = true,
-                        modifier = Modifier.clickable { showDateDialog = true },
-                    )
+                    SmallTitle(text = "购买日期", modifier = Modifier.fillMaxWidth())
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDateDialog = true }
+                    ) {
+                        TextField(
+                            value = itemDate,
+                            onValueChange = { },
+                            label = "请选择购买日期",
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
 
                     // 备注
-                    SmallTitle(text = "备注")
+                    SmallTitle(text = "备注", modifier = Modifier.fillMaxWidth())
                     TextField(
                         value = itemNote,
                         onValueChange = { itemNote = it },
@@ -212,7 +222,11 @@ fun MyItemsScreen() {
                         singleLine = false,
                         minLines = 3,
                         maxLines = 5,
+                        modifier = Modifier.fillMaxWidth(),
                     )
+
+                    // 底部间距
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
 
