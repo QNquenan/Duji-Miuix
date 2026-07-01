@@ -27,8 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -42,6 +44,7 @@ import java.util.Calendar
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.sample
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -54,6 +57,9 @@ import top.yukonga.miuix.kmp.basic.NumberPickerColors
 import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.SnackbarDuration
+import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -83,12 +89,15 @@ fun MyItemsScreen() {
     var itemPrice by remember { mutableStateOf("") }
     var itemDate by remember { mutableStateOf("") }
     var itemNote by remember { mutableStateOf("") }
+    var isPinned by remember { mutableStateOf(false) }
+    val items = remember { mutableStateListOf<ItemData>() }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var showDateDialog by remember { mutableStateOf(false) }
     var showIconDialog by remember { mutableStateOf(false) }
     var showCustomIconDialog by remember { mutableStateOf(false) }
     var selectedIcon by remember { mutableStateOf("📦") }
     var customIconText by remember { mutableStateOf("") }
-    var isPinned by remember { mutableStateOf(false) }
     val calendar = remember { Calendar.getInstance() }
     val currentYear = calendar.get(Calendar.YEAR)
     val currentMonth = calendar.get(Calendar.MONTH) + 1
@@ -96,6 +105,19 @@ fun MyItemsScreen() {
     var selectedYear by remember { mutableIntStateOf(currentYear) }
     var selectedMonth by remember { mutableIntStateOf(currentMonth) }
     var selectedDay by remember { mutableIntStateOf(currentDay) }
+
+    fun resetAddForm() {
+        itemName = ""
+        itemPrice = ""
+        itemDate = ""
+        itemNote = ""
+        isPinned = false
+        selectedIcon = "📦"
+        customIconText = ""
+        selectedYear = currentYear
+        selectedMonth = currentMonth
+        selectedDay = currentDay
+    }
 
     // 监听滚动方向：向下滚隐藏 FAB，向上滚显示 FAB
     @OptIn(FlowPreview::class)
@@ -114,6 +136,7 @@ fun MyItemsScreen() {
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = "我的物品",
@@ -135,20 +158,16 @@ fun MyItemsScreen() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatsCard()
-                ItemListCard(
-                    icon = "📱",
-                    name = "iPhone 15 Pro",
-                    date = "2024-09-22",
-                    avgPrice = "¥18/天",
-                    totalPrice = "¥8999"
-                )
-                ItemListCard(
-                    icon = "💻",
-                    name = "MacBook Air",
-                    date = "2023-06-15",
-                    avgPrice = "¥12/天",
-                    totalPrice = "¥7999"
-                )
+                items.forEach { item ->
+                    ItemListCard(
+                        icon = item.icon,
+                        name = item.name,
+                        date = item.date,
+                        avgPrice = "¥${item.price.toIntOrNull()?.let { it / maxOf(1, daysSince(item.date)) } ?: 0}/天",
+                        totalPrice = "¥${item.price}",
+                        isPinned = item.isPinned
+                    )
+                }
             }
 
             // FAB
@@ -177,7 +196,10 @@ fun MyItemsScreen() {
                 title = "添加物品",
                 startAction = {
                     val dismiss = LocalDismissState.current
-                    IconButton(onClick = { dismiss?.invoke() }) {
+                    IconButton(onClick = {
+                        resetAddForm()
+                        dismiss?.invoke()
+                    }) {
                         Icon(
                             imageVector = MiuixIcons.Close,
                             contentDescription = "关闭",
@@ -187,7 +209,28 @@ fun MyItemsScreen() {
                 },
                 endAction = {
                     val dismiss = LocalDismissState.current
-                    IconButton(onClick = { dismiss?.invoke() }) {
+                    IconButton(onClick = {
+                        if (itemName.isNotBlank() && itemPrice.isNotBlank() && itemDate.isNotBlank()) {
+                            items.add(
+                                ItemData(
+                                    icon = selectedIcon,
+                                    name = itemName.trim(),
+                                    date = itemDate,
+                                    price = itemPrice,
+                                    note = itemNote,
+                                    isPinned = isPinned
+                                )
+                            )
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "添加成功😋",
+                                    duration = SnackbarDuration.Custom(2000)
+                                )
+                            }
+                            resetAddForm()
+                            dismiss?.invoke()
+                        }
+                    }) {
                         Icon(
                             imageVector = MiuixIcons.Ok,
                             contentDescription = "确认",
@@ -539,6 +582,30 @@ fun MyItemsScreen() {
                 }
             }
         }
+    }
+}
+
+data class ItemData(
+    val icon: String,
+    val name: String,
+    val date: String,
+    val price: String,
+    val note: String,
+    val isPinned: Boolean,
+)
+
+private fun daysSince(dateString: String): Int {
+    return try {
+        val parts = dateString.split("-")
+        val year = parts[0].toInt()
+        val month = parts[1].toInt()
+        val day = parts[2].toInt()
+        val purchase = Calendar.getInstance().apply { set(year, month - 1, day) }
+        val now = Calendar.getInstance()
+        val diff = now.timeInMillis - purchase.timeInMillis
+        maxOf(1, (diff / (1000 * 60 * 60 * 24)).toInt())
+    } catch (_: Exception) {
+        1
     }
 }
 
