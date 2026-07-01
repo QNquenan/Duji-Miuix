@@ -82,7 +82,7 @@ fun MyItemsScreen() {
     var showDateDialog by remember { mutableStateOf(false) }
     var showIconDialog by remember { mutableStateOf(false) }
     var showCustomIconDialog by remember { mutableStateOf(false) }
-    var selectedIcon by remember { mutableStateOf("") }
+    var selectedIcon by remember { mutableStateOf("📦") }
     var customIconText by remember { mutableStateOf("") }
     val calendar = remember { Calendar.getInstance() }
     val currentYear = calendar.get(Calendar.YEAR)
