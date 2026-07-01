@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -304,6 +305,7 @@ fun MyItemsScreen() {
                                     Box(
                                         modifier = Modifier
                                             .size(48.dp)
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(
                                                 color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
                                                 shape = RoundedCornerShape(12.dp)
@@ -311,18 +313,6 @@ fun MyItemsScreen() {
                                             .clickable { tempSelectedIcon = icon },
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        androidx.compose.animation.AnimatedVisibility(
-                                            visible = isSelected,
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .background(
-                                                        color = MiuixTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                                        shape = RoundedCornerShape(12.dp)
-                                                    )
-                                            )
-                                        }
                                         Text(
                                             text = icon,
                                             fontSize = 24.sp,
