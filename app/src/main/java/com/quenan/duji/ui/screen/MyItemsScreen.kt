@@ -35,9 +35,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Calendar
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.sample
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
@@ -74,9 +76,10 @@ fun MyItemsScreen() {
     var itemDate by remember { mutableStateOf("") }
     var itemNote by remember { mutableStateOf("") }
     var showDateDialog by remember { mutableStateOf(false) }
-    var selectedYear by remember { mutableIntStateOf(2024) }
-    var selectedMonth by remember { mutableIntStateOf(1) }
-    var selectedDay by remember { mutableIntStateOf(1) }
+    val calendar = remember { Calendar.getInstance() }
+    var selectedYear by remember { mutableIntStateOf(calendar.get(Calendar.YEAR)) }
+    var selectedMonth by remember { mutableIntStateOf(calendar.get(Calendar.MONTH) + 1) }
+    var selectedDay by remember { mutableIntStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
 
     // 监听滚动方向：向下滚隐藏 FAB，向上滚显示 FAB
     @OptIn(FlowPreview::class)
@@ -273,7 +276,8 @@ fun MyItemsScreen() {
                                 onValueChange = { selectedYear = it },
                                 range = 1900..2100,
                                 wrapAround = true,
-                                modifier = Modifier.width(80.dp),
+                                modifier = Modifier.width(100.dp),
+                                label = { it.toString() },
                             )
                         }
 
@@ -292,6 +296,7 @@ fun MyItemsScreen() {
                                 range = 1..12,
                                 wrapAround = true,
                                 modifier = Modifier.width(80.dp),
+                                label = { it.toString().padStart(2, '0') },
                             )
                         }
 
@@ -310,6 +315,7 @@ fun MyItemsScreen() {
                                 range = 1..31,
                                 wrapAround = true,
                                 modifier = Modifier.width(80.dp),
+                                label = { it.toString().padStart(2, '0') },
                             )
                         }
                     }
@@ -332,6 +338,7 @@ fun MyItemsScreen() {
                                 showDateDialog = false
                             },
                             modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
                         )
                     }
                 }
