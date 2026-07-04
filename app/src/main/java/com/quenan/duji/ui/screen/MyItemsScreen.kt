@@ -1,8 +1,5 @@
 package com.quenan.duji.ui.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,14 +22,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
@@ -45,9 +40,6 @@ import androidx.compose.ui.unit.sp
 import com.quenan.duji.data.item.ItemData
 import com.quenan.duji.data.item.ItemStats
 import java.util.Calendar
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -89,8 +81,6 @@ fun MyItemsScreen(
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val scrollState = rememberScrollState()
-    var previousScroll by remember { mutableIntStateOf(0) }
-    var showFab by remember { mutableStateOf(true) }
     var showBottomSheet by remember { mutableStateOf(false) }
     var itemName by remember { mutableStateOf("") }
     var itemPrice by remember { mutableStateOf("") }
@@ -128,22 +118,6 @@ fun MyItemsScreen(
         selectedDay = currentDay
     }
 
-    // 监听滚动方向：向下滚隐藏 FAB，向上滚显示 FAB
-    @OptIn(FlowPreview::class)
-    LaunchedEffect(Unit) {
-        snapshotFlow { scrollState.value }
-            .sample(100)  // 每 100ms 采样一次，避免过于频繁
-            .distinctUntilChanged()
-            .collect { current ->
-                if (current > previousScroll && current > 0) {
-                    showFab = false  // 向下滚动 → 隐藏
-                } else if (current < previousScroll) {
-                    showFab = true   // 向上滚动 → 显示
-                }
-                previousScroll = current
-            }
-    }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -151,6 +125,21 @@ fun MyItemsScreen(
                 title = "我的物品",
                 scrollBehavior = scrollBehavior
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(contentPadding)
+                    .padding(end = 16.dp, bottom = 16.dp),
+                onClick = { showBottomSheet = true },
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Add,
+                    contentDescription = "添加",
+                    tint = Color.White,
+                )
+            }
         }
     ) { innerPadding ->
         Box(
@@ -189,27 +178,6 @@ fun MyItemsScreen(
                 }
             }
 
-            // FAB
-            AnimatedVisibility(
-                visible = showFab,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(contentPadding)
-                    .padding(end = 16.dp, bottom = 16.dp),
-                enter = slideInVertically { it },
-                exit = slideOutVertically { it }
-            ) {
-                FloatingActionButton(
-                    onClick = { showBottomSheet = true },
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Add,
-                        contentDescription = "添加",
-                        tint = Color.White
-                    )
-                }
-            }
 
             // WindowBottomSheet - 点击 FAB 时弹出
             WindowBottomSheet(
