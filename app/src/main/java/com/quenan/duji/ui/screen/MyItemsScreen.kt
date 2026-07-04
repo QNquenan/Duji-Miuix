@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
@@ -79,7 +80,10 @@ import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.window.WindowDialog
 
 @Composable
-fun MyItemsScreen() {
+fun MyItemsScreen(
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
+) {
     val scrollBehavior = MiuixScrollBehavior()
     val scrollState = rememberScrollState()
     var previousScroll by remember { mutableIntStateOf(0) }
@@ -145,7 +149,7 @@ fun MyItemsScreen() {
         }
     ) { innerPadding ->
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
@@ -154,6 +158,7 @@ fun MyItemsScreen() {
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .padding(contentPadding)
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -175,6 +180,8 @@ fun MyItemsScreen() {
                 visible = showFab,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(contentPadding)
                     .padding(end = 16.dp, bottom = 16.dp),
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it }

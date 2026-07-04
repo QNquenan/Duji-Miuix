@@ -72,12 +72,12 @@ class MainActivity : ComponentActivity() {
                     val bottomPadding = innerPadding.calculateBottomPadding()
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = bottomPadding)
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                            .padding(bottom = bottomPadding)
                     ) { page ->
                         when (page) {
-                            0 -> MyItemsScreen()
+                            0 -> MyItemsScreen(contentPadding = PaddingValues(bottom = bottomPadding))
                             1 -> ThoseDaysScreen()
                             2 -> SettingsScreen()
                         }
