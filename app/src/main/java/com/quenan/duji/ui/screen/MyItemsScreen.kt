@@ -22,6 +22,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -86,7 +88,6 @@ fun MyItemsScreen(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val scrollBehavior = MiuixScrollBehavior()
-    val scrollState = rememberScrollState()
     var fabVisible by remember { mutableStateOf(true) }
     var scrollDistance by remember { mutableFloatStateOf(0f) }
     val fabBottomOffset by animateDpAsState(
@@ -133,7 +134,6 @@ fun MyItemsScreen(
     var selectedYear by remember { mutableIntStateOf(currentYear) }
     var selectedMonth by remember { mutableIntStateOf(currentMonth) }
     var selectedDay by remember { mutableIntStateOf(currentDay) }
-
     fun resetAddForm() {
         itemName = ""
         itemPrice = ""
@@ -157,22 +157,25 @@ fun MyItemsScreen(
         }
     ) { innerPadding ->
         Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = modifier.fillMaxSize()
         ) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(scrollState)
                     .nestedScroll(fabScrollConnection)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .padding(contentPadding)
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = PaddingValues(
+                    top = innerPadding.calculateTopPadding() + 12.dp,
+                    bottom = contentPadding.calculateBottomPadding() + 12.dp,
+                    start = 12.dp,
+                    end = 12.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                StatsCard(stats = stats)
-                items.forEach { item ->
+                item {
+                    StatsCard(stats = stats)
+                }
+                items(items, key = { it.id }) { item ->
                     ItemListCard(
                         icon = item.icon,
                         name = item.name,
