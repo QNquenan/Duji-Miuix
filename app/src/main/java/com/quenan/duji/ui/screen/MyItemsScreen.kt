@@ -1,5 +1,7 @@
 package com.quenan.duji.ui.screen
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +36,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -81,6 +87,29 @@ fun MyItemsScreen(
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val scrollState = rememberScrollState()
+    var fabVisible by remember { mutableStateOf(true) }
+    var scrollDistance by remember { mutableFloatStateOf(0f) }
+    val fabBottomOffset by animateDpAsState(
+        targetValue = if (fabVisible) 0.dp else 120.dp,
+        animationSpec = tween(durationMillis = 300),
+        label = "my-items-fab-offset",
+    )
+    val fabScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                scrollDistance += delta
+                if (scrollDistance < -50f) {
+                    if (fabVisible) fabVisible = false
+                    scrollDistance = 0f
+                } else if (scrollDistance > 50f) {
+                    if (!fabVisible) fabVisible = true
+                    scrollDistance = 0f
+                }
+                return Offset.Zero
+            }
+        }
+    }
     var showBottomSheet by remember { mutableStateOf(false) }
     var itemName by remember { mutableStateOf("") }
     var itemPrice by remember { mutableStateOf("") }
@@ -131,7 +160,8 @@ fun MyItemsScreen(
                 modifier = Modifier
                     .navigationBarsPadding()
                     .padding(contentPadding)
-                    .padding(end = 16.dp, bottom = 16.dp),
+                    .padding(end = 16.dp, bottom = 16.dp)
+                    .padding(bottom = fabBottomOffset),
                 onClick = { showBottomSheet = true },
             ) {
                 Icon(
@@ -151,6 +181,7 @@ fun MyItemsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
+                    .nestedScroll(fabScrollConnection)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(contentPadding)
                     .padding(horizontal = 12.dp, vertical = 12.dp),
