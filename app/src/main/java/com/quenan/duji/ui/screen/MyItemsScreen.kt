@@ -28,12 +28,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +42,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.quenan.duji.data.item.ItemData
+import com.quenan.duji.data.item.ItemStats
 import java.util.Calendar
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -94,7 +97,9 @@ fun MyItemsScreen(
     var itemDate by remember { mutableStateOf("") }
     var itemNote by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
-    val items = remember { mutableStateListOf<ItemData>() }
+    val viewModel: MyItemsViewModel = viewModel()
+    val items by viewModel.items.collectAsStateWithLifecycle()
+    val stats by viewModel.stats.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showDateDialog by remember { mutableStateOf(false) }
@@ -162,15 +167,24 @@ fun MyItemsScreen(
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatsCard()
+                StatsCard(stats = stats)
                 items.forEach { item ->
                     ItemListCard(
                         icon = item.icon,
                         name = item.name,
                         date = item.date,
-                        avgPrice = "¥${item.price.toIntOrNull()?.let { it / maxOf(1, daysSince(item.date)) } ?: 0}/天",
+                        avgPrice = "¥${item.price / maxOf(1, daysSince(item.date))}/天",
                         totalPrice = "¥${item.price}",
-                        isPinned = item.isPinned
+                        isPinned = item.isPinned,
+                        onDelete = {
+                            viewModel.deleteItem(item)
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "已删除 ${item.name}",
+                                    duration = SnackbarDuration.Custom(2000)
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -218,15 +232,13 @@ fun MyItemsScreen(
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
                         if (itemName.isNotBlank() && itemPrice.isNotBlank() && itemDate.isNotBlank()) {
-                            items.add(
-                                ItemData(
-                                    icon = selectedIcon,
-                                    name = itemName.trim(),
-                                    date = itemDate,
-                                    price = itemPrice,
-                                    note = itemNote,
-                                    isPinned = isPinned
-                                )
+                            viewModel.addItem(
+                                icon = selectedIcon,
+                                name = itemName,
+                                date = itemDate,
+                                price = itemPrice,
+                                note = itemNote,
+                                isPinned = isPinned,
                             )
                             scope.launch {
                                 snackbarHostState.showSnackbar(
@@ -592,15 +604,6 @@ fun MyItemsScreen(
     }
 }
 
-data class ItemData(
-    val icon: String,
-    val name: String,
-    val date: String,
-    val price: String,
-    val note: String,
-    val isPinned: Boolean,
-)
-
 private fun daysSince(dateString: String): Int {
     return try {
         val parts = dateString.split("-")
@@ -624,12 +627,14 @@ private fun ItemListCard(
     avgPrice: String,
     totalPrice: String,
     isPinned: Boolean = false,
+    onDelete: () -> Unit,
 ) {
     Card(
         colors = CardDefaults.defaultColors(
             color = MiuixTheme.colorScheme.surfaceContainer
         ),
         insideMargin = PaddingValues(16.dp),
+        onClick = onDelete,
         showIndication = true,
         pressFeedbackType = PressFeedbackType.Tilt
     ) {
@@ -719,7 +724,7 @@ private fun ItemListCard(
 
 // ... 以下 StatsCard / StatItem 保持原样 ...
 @Composable
-private fun StatsCard() {
+private fun StatsCard(stats: ItemStats) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.defaultColors(
@@ -747,17 +752,17 @@ private fun StatsCard() {
             ) {
                 StatItem(
                     label = "物品价值",
-                    value = "¥6157",
+                    value = "¥${stats.totalValue}",
                     modifier = Modifier.weight(1f)
                 )
                 StatItem(
                     label = "物品数量",
-                    value = "3",
+                    value = stats.itemCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
                 StatItem(
                     label = "总日均价格",
-                    value = "¥17",
+                    value = "¥${stats.totalDailyPrice}",
                     modifier = Modifier.weight(1f)
                 )
             }
