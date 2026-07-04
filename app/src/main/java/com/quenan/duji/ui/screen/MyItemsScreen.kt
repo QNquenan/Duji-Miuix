@@ -289,73 +289,88 @@ fun MyItemsScreen(
                         )
                     }
 
-                    // 名称
-                    SmallTitle(text = "名称", modifier = Modifier.fillMaxWidth())
-                    TextField(
-                        value = itemName,
-                        onValueChange = { itemName = it },
-                        label = "请输入名称",
-                        useLabelAsPlaceholder = true,
-                        maxLines = 1,
-                    )
-
-                    // 价格
-                    SmallTitle(text = "价格", modifier = Modifier.fillMaxWidth())
-                    TextField(
-                        value = itemPrice,
-                        onValueChange = {
-                            if (it.all { char -> char.isDigit() }) {
-                                itemPrice = it
-                            }
-                        },
-                        label = "请输入价格",
-                        useLabelAsPlaceholder = true,
+                    SmallTitle(text = "信息", modifier = Modifier.fillMaxWidth())
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1,
-                        keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                    )
-
-                    // 购买日期
-                    SmallTitle(text = "购买日期", modifier = Modifier.fillMaxWidth())
-                    Surface(
-                        onClick = { showDateDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MiuixTheme.colorScheme.secondaryContainer,
+                        insideMargin = PaddingValues(16.dp),
+                        colors = CardDefaults.defaultColors(
+                            color = MiuixTheme.colorScheme.surfaceContainer,
+                        ),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp),
-                            contentAlignment = Alignment.CenterStart
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Text(
-                                text = if (itemDate.isEmpty()) "请选择购买日期" else itemDate,
-                                color = if (itemDate.isEmpty()) MiuixTheme.colorScheme.onSecondaryContainer else MiuixTheme.colorScheme.onBackground,
-                                style = MiuixTheme.textStyles.main,
+                            TextField(
+                                value = itemName,
+                                onValueChange = { itemName = it },
+                                label = "请输入名称",
+                                useLabelAsPlaceholder = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 1,
+                            )
+
+                            TextField(
+                                value = itemPrice,
+                                onValueChange = {
+                                    if (it.all { char -> char.isDigit() }) {
+                                        itemPrice = it
+                                    }
+                                },
+                                label = "请输入价格",
+                                useLabelAsPlaceholder = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 1,
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                            )
+
+                            Surface(
+                                onClick = { showDateDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MiuixTheme.colorScheme.secondaryContainer,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    Text(
+                                        text = if (itemDate.isEmpty()) "请选择购买日期" else itemDate,
+                                        color = if (itemDate.isEmpty()) MiuixTheme.colorScheme.onSecondaryContainer else MiuixTheme.colorScheme.onBackground,
+                                        style = MiuixTheme.textStyles.main,
+                                    )
+                                }
+                            }
+
+                            TextField(
+                                value = itemNote,
+                                onValueChange = { itemNote = it },
+                                label = "备注",
+                                useLabelAsPlaceholder = true,
+                                singleLine = false,
+                                minLines = 3,
+                                maxLines = 5,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }
 
-                    // 备注
-                    SmallTitle(text = "备注", modifier = Modifier.fillMaxWidth())
-                    TextField(
-                        value = itemNote,
-                        onValueChange = { itemNote = it },
-                        label = "备注",
-                        useLabelAsPlaceholder = true,
-                        singleLine = false,
-                        minLines = 3,
-                        maxLines = 5,
+                    SmallTitle(text = "置顶", modifier = Modifier.fillMaxWidth())
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    // 置顶开关
-                    SwitchPreference(
-                        title = "置顶",
-                        checked = isPinned,
-                        onCheckedChange = { isPinned = it },
-                    )
+                        insideMargin = PaddingValues(16.dp),
+                        colors = CardDefaults.defaultColors(
+                            color = MiuixTheme.colorScheme.surfaceContainer,
+                        ),
+                    ) {
+                        SwitchPreference(
+                            title = "置顶",
+                            checked = isPinned,
+                            onCheckedChange = { isPinned = it },
+                        )
+                    }
 
                     // 底部间距
                     Spacer(modifier = Modifier.height(24.dp))
