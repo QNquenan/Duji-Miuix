@@ -1,10 +1,6 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.ksp)
 }
 
 android {
@@ -37,12 +33,6 @@ android {
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
-    }
-}
-
 dependencies {
     // AndroidX
     implementation(libs.androidx.appcompat)
@@ -58,11 +48,8 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.datastore.preferences)
     debugImplementation(libs.compose.ui.tooling)
-
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
 
     // Miuix —— 全量导入
     implementation(libs.miuix.ui)
