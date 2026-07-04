@@ -154,22 +154,6 @@ fun MyItemsScreen(
                 title = "我的物品",
                 scrollBehavior = scrollBehavior
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(contentPadding)
-                    .padding(end = 16.dp, bottom = 16.dp)
-                    .padding(bottom = fabBottomOffset),
-                onClick = { showBottomSheet = true },
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Add,
-                    contentDescription = "添加",
-                    tint = Color.White,
-                )
-            }
         }
     ) { innerPadding ->
         Box(
@@ -209,6 +193,21 @@ fun MyItemsScreen(
                 }
             }
 
+            FloatingActionButton(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(contentPadding)
+                    .padding(end = 16.dp, bottom = 16.dp)
+                    .padding(bottom = fabBottomOffset),
+                onClick = { showBottomSheet = true },
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Add,
+                    contentDescription = "添加",
+                    tint = Color.White,
+                )
+            }
 
             // WindowBottomSheet - 点击 FAB 时弹出
             WindowBottomSheet(
