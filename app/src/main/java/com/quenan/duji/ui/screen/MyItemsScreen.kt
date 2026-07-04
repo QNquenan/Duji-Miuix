@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
@@ -202,7 +203,7 @@ fun MyItemsScreen(
                     .navigationBarsPadding()
                     .padding(contentPadding)
                     .padding(end = 16.dp, bottom = 16.dp)
-                    .padding(bottom = fabBottomOffset),
+                    .offset(y = fabBottomOffset),
                 onClick = { showBottomSheet = true },
             ) {
                 Icon(
