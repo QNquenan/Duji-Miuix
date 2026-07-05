@@ -58,6 +58,14 @@ fun SystemNoticeHost(
     modifier: Modifier = Modifier,
 ) {
     val message = hostState.currentMessage
+    var renderedMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(message) {
+        if (message != null) {
+            renderedMessage = message
+        }
+    }
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
@@ -79,10 +87,19 @@ fun SystemNoticeHost(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 Text(
-                    text = message.orEmpty(),
+                    text = renderedMessage.orEmpty(),
                     color = Color.White,
                     style = MiuixTheme.textStyles.main,
                 )
+            }
+        }
+    }
+
+    LaunchedEffect(message, renderedMessage) {
+        if (message == null && renderedMessage != null) {
+            delay(220)
+            if (hostState.currentMessage == null) {
+                renderedMessage = null
             }
         }
     }
