@@ -44,6 +44,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.data.item.ItemData
@@ -271,7 +272,6 @@ fun MyItemsScreen(
                                 Icon(
                                     imageVector = MiuixIcons.Edit,
                                     contentDescription = "修改",
-                                    tint = MiuixTheme.colorScheme.primary,
                                 )
                             }
                         }
@@ -340,17 +340,15 @@ fun MyItemsScreen(
             if (showDeleteConfirmDialog && selectedItem != null) {
                 WindowDialog(
                     title = "删除物品",
+                    summary = "确认删除 ${selectedItem?.name} 吗？",
                     show = true,
+                    insideMargin = DpSize(16.dp, 16.dp),
                     onDismissRequest = { showDeleteConfirmDialog = false },
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
-                            text = "确认删除 ${selectedItem?.name} 吗？",
-                            color = MiuixTheme.colorScheme.onBackground,
-                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
