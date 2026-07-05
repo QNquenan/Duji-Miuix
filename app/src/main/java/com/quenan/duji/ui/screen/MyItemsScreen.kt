@@ -54,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -234,7 +235,25 @@ fun MyItemsScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    color = MiuixTheme.colorScheme.secondaryContainer,
+                                    shape = RoundedCornerShape(16.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = detailItem.icon,
+                                fontSize = 32.sp,
+                            )
+                        }
+
                         SmallTitle(text = "详细信息", modifier = Modifier.fillMaxWidth())
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -245,14 +264,17 @@ fun MyItemsScreen(
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
-                                DetailRow(label = "图标", value = detailItem.icon)
                                 DetailRow(label = "名称", value = detailItem.name)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                                 DetailRow(label = "购买日期", value = detailItem.date)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                                 DetailRow(label = "总价格", value = "¥${detailItem.price}")
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                                 DetailRow(label = "日均价格", value = "¥${detailItem.price / maxOf(1, daysSince(detailItem.date))}/天")
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                                 DetailRow(label = "备注", value = if (detailItem.note.isBlank()) "未填写" else detailItem.note)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                                 DetailRow(label = "置顶", value = if (detailItem.isPinned) "是" else "否")
                             }
                         }
