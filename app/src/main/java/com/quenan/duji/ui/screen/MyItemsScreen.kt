@@ -217,6 +217,7 @@ fun MyItemsScreen(
             WindowBottomSheet(
                 show = showBottomSheet,
                 title = "添加物品",
+                backgroundColor = Color(0xFFF7F7F7),
                 startAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
