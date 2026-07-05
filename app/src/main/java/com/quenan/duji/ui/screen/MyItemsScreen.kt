@@ -44,6 +44,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -967,20 +968,24 @@ private fun DetailRow(
     label: String,
     value: String,
 ) {
-    Column(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
     ) {
         Text(
             text = label,
             fontSize = 12.sp,
             color = MiuixTheme.colorScheme.onSurfaceSecondary,
         )
+        Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = value,
+            modifier = Modifier.weight(1f),
             fontSize = 16.sp,
             color = MiuixTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
         )
     }
 }
