@@ -120,6 +120,7 @@ fun MyItemsScreen(
     var itemNote by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<ItemData?>(null) }
+    var showDetailBottomSheet by remember { mutableStateOf(false) }
     val viewModel: MyItemsViewModel = viewModel()
     val items by viewModel.items.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
@@ -188,6 +189,7 @@ fun MyItemsScreen(
                         isPinned = item.isPinned,
                         onClick = {
                             selectedItem = item
+                            showDetailBottomSheet = true
                         }
                     )
                 }
@@ -211,13 +213,13 @@ fun MyItemsScreen(
 
             selectedItem?.let { detailItem ->
                 WindowBottomSheet(
-                    show = true,
-                    title = detailItem.name,
+                    show = showDetailBottomSheet,
+                    title = "物品详情",
                     backgroundColor = Color(0xFFF7F7F7),
                     startAction = {
                         val dismiss = LocalDismissState.current
                         IconButton(onClick = {
-                            selectedItem = null
+                            showDetailBottomSheet = false
                             dismiss?.invoke()
                         }) {
                             Icon(
@@ -227,13 +229,16 @@ fun MyItemsScreen(
                             )
                         }
                     },
-                    onDismissRequest = { selectedItem = null },
+                    onDismissRequest = { showDetailBottomSheet = false },
+                    onDismissFinished = {
+                        selectedItem = null
+                    },
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .verticalScroll(rememberScrollState())
-                            .padding(12.dp),
+                            .padding(vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -266,16 +271,16 @@ fun MyItemsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 DetailRow(label = "名称", value = detailItem.name)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
                                 DetailRow(label = "购买日期", value = detailItem.date)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
                                 DetailRow(label = "总价格", value = "¥${detailItem.price}")
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
                                 DetailRow(label = "日均价格", value = "¥${detailItem.price / maxOf(1, daysSince(detailItem.date))}/天")
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                                DetailRow(label = "备注", value = if (detailItem.note.isBlank()) "未填写" else detailItem.note)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                                DetailRow(label = "置顶", value = if (detailItem.isPinned) "是" else "否")
+                                if (detailItem.note.isNotBlank()) {
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+                                    DetailRow(label = "备注", value = detailItem.note)
+                                }
                             }
                         }
                     }
