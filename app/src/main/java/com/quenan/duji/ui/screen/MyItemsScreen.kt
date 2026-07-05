@@ -1,5 +1,6 @@
 package com.quenan.duji.ui.screen
 
+import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -64,9 +65,6 @@ import top.yukonga.miuix.kmp.basic.NumberPickerColors
 import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.SnackbarDuration
-import top.yukonga.miuix.kmp.basic.SnackbarHost
-import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -129,8 +127,8 @@ fun MyItemsScreen(
     val viewModel: MyItemsViewModel = viewModel()
     val items by viewModel.items.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     var showDateDialog by remember { mutableStateOf(false) }
     var showIconDialog by remember { mutableStateOf(false) }
     var showCustomIconDialog by remember { mutableStateOf(false) }
@@ -173,7 +171,6 @@ fun MyItemsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = "我的物品",
@@ -342,7 +339,7 @@ fun MyItemsScreen(
                     title = "删除物品",
                     summary = "确认删除 ${selectedItem?.name} 吗？",
                     show = true,
-                    insideMargin = DpSize(16.dp, 16.dp),
+//                    insideMargin = DpSize(16.dp, 16.dp),
                     onDismissRequest = { showDeleteConfirmDialog = false },
                 ) {
                     Column(
@@ -363,12 +360,7 @@ fun MyItemsScreen(
                                 onClick = {
                                     selectedItem?.let { item ->
                                         viewModel.deleteItem(item)
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                message = "删除成功",
-                                                duration = SnackbarDuration.Custom(2000)
-                                            )
-                                        }
+                                        Toast.makeText(context, "删除成功", Toast.LENGTH_SHORT).show()
                                     }
                                     showDeleteConfirmDialog = false
                                     showDetailBottomSheet = false
@@ -427,12 +419,11 @@ fun MyItemsScreen(
                                     isPinned = isPinned,
                                 )
                             }
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = if (editingItem == null) "添加成功😋" else "修改成功😋",
-                                    duration = SnackbarDuration.Custom(2000)
-                                )
-                            }
+                            Toast.makeText(
+                                context,
+                                if (editingItem == null) "添加成功😋" else "修改成功😋",
+                                Toast.LENGTH_SHORT,
+                            ).show()
                             resetAddForm()
                             editingItem = null
                             dismiss?.invoke()
