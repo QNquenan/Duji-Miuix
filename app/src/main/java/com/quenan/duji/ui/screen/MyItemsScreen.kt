@@ -74,6 +74,8 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Pin
 import top.yukonga.miuix.kmp.icon.extended.Years
@@ -236,35 +238,40 @@ fun MyItemsScreen(
                     backgroundColor = Color(0xFFF7F7F7),
                     startAction = {
                         val dismiss = LocalDismissState.current
+                        IconButton(onClick = {
+                            showDetailBottomSheet = false
+                            dismiss?.invoke()
+                        }) {
+                            Icon(
+                                imageVector = MiuixIcons.Close,
+                                contentDescription = "关闭",
+                                tint = MiuixTheme.colorScheme.onBackground,
+                            )
+                        }
+                    },
+                    endAction = {
+                        val dismiss = LocalDismissState.current
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            TextButton(
-                                text = "删除",
-                                onClick = {
-                                    showDeleteConfirmDialog = true
-                                },
-                                colors = ButtonDefaults.textButtonColors(
-                                    textColor = Color(0xFFFF3B30),
-                                ),
-                            )
-                            TextButton(
-                                text = "修改",
-                                onClick = {
-                                    populateForm(detailItem)
-                                    editingItem = detailItem
-                                    showDetailBottomSheet = false
-                                    dismiss?.invoke()
-                                    showBottomSheet = true
-                                },
-                                colors = ButtonDefaults.textButtonColorsPrimary(),
-                            )
                             IconButton(onClick = {
-                                showDetailBottomSheet = false
-                                dismiss?.invoke()
+                                showDeleteConfirmDialog = true
                             }) {
                                 Icon(
-                                    imageVector = MiuixIcons.Close,
-                                    contentDescription = "关闭",
-                                    tint = MiuixTheme.colorScheme.onBackground,
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = "删除",
+                                    tint = Color(0xFFFF3B30),
+                                )
+                            }
+                            IconButton(onClick = {
+                                populateForm(detailItem)
+                                editingItem = detailItem
+                                showDetailBottomSheet = false
+                                dismiss?.invoke()
+                                showBottomSheet = true
+                            }) {
+                                Icon(
+                                    imageVector = MiuixIcons.Edit,
+                                    contentDescription = "修改",
+                                    tint = MiuixTheme.colorScheme.primary,
                                 )
                             }
                         }
