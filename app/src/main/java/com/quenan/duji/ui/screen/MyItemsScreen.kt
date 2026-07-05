@@ -1,6 +1,5 @@
 package com.quenan.duji.ui.screen
 
-import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.data.item.ItemData
 import com.quenan.duji.data.item.ItemStats
+import com.quenan.duji.ui.component.rememberNoticeAction
 import java.util.Calendar
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -128,7 +128,7 @@ fun MyItemsScreen(
     val items by viewModel.items.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val showNotice = rememberNoticeAction()
     var showDateDialog by remember { mutableStateOf(false) }
     var showIconDialog by remember { mutableStateOf(false) }
     var showCustomIconDialog by remember { mutableStateOf(false) }
@@ -360,7 +360,7 @@ fun MyItemsScreen(
                                 onClick = {
                                     selectedItem?.let { item ->
                                         viewModel.deleteItem(item)
-                                        Toast.makeText(context, "删除成功", Toast.LENGTH_SHORT).show()
+                                        showNotice("删除成功")
                                     }
                                     showDeleteConfirmDialog = false
                                     showDetailBottomSheet = false
@@ -419,11 +419,7 @@ fun MyItemsScreen(
                                     isPinned = isPinned,
                                 )
                             }
-                            Toast.makeText(
-                                context,
-                                if (editingItem == null) "添加成功😋" else "修改成功😋",
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                            showNotice(if (editingItem == null) "添加成功😋" else "修改成功😋")
                             resetAddForm()
                             editingItem = null
                             dismiss?.invoke()

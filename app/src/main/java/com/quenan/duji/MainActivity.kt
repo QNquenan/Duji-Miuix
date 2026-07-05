@@ -22,6 +22,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.CompositionLocalProvider
+import com.quenan.duji.ui.component.LocalSystemNotice
+import com.quenan.duji.ui.component.SystemNoticeHost
+import com.quenan.duji.ui.component.rememberSystemNoticeHostState
 import com.quenan.duji.ui.screen.MyItemsScreen
 import com.quenan.duji.ui.screen.SettingsScreen
 import com.quenan.duji.ui.screen.ThoseDaysScreen
@@ -46,38 +50,42 @@ class MainActivity : ComponentActivity() {
             DuJiTheme {
                 val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
                 val duJiPagerState = rememberDuJiPagerState(pagerState)
+                val noticeHostState = rememberSystemNoticeHostState()
 
                 val settledPage = pagerState.settledPage
                 LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
                 val currentPage = pagerState.currentPage
                 LaunchedEffect(currentPage) { duJiPagerState.syncPage() }
 
-                Scaffold(
-                    bottomBar = {
-                        NavigationBar {
-                            bottomNavItems.forEachIndexed { index, item ->
-                                NavigationBarItem(
-                                    modifier = Modifier.weight(1f),
-                                    icon = item.icon,
-                                    label = item.label,
-                                    selected = duJiPagerState.selectedPage == index,
-                                    onClick = {
-                                        duJiPagerState.animateToPage(index)
-                                    }
-                                )
+                CompositionLocalProvider(LocalSystemNotice provides noticeHostState) {
+                    Scaffold(
+                        bottomBar = {
+                            NavigationBar {
+                                bottomNavItems.forEachIndexed { index, item ->
+                                    NavigationBarItem(
+                                        modifier = Modifier.weight(1f),
+                                        icon = item.icon,
+                                        label = item.label,
+                                        selected = duJiPagerState.selectedPage == index,
+                                        onClick = {
+                                            duJiPagerState.animateToPage(index)
+                                        }
+                                    )
+                                }
                             }
                         }
-                    }
-                ) { innerPadding ->
-                    val bottomPadding = innerPadding.calculateBottomPadding()
-                    HorizontalPager(
-                        state = pagerState,
-                    ) { page ->
-                        when (page) {
-                            0 -> MyItemsScreen(contentPadding = PaddingValues(bottom = bottomPadding))
-                            1 -> ThoseDaysScreen()
-                            2 -> SettingsScreen()
+                    ) { innerPadding ->
+                        val bottomPadding = innerPadding.calculateBottomPadding()
+                        HorizontalPager(
+                            state = pagerState,
+                        ) { page ->
+                            when (page) {
+                                0 -> MyItemsScreen(contentPadding = PaddingValues(bottom = bottomPadding))
+                                1 -> ThoseDaysScreen()
+                                2 -> SettingsScreen()
+                            }
                         }
+                        SystemNoticeHost(hostState = noticeHostState)
                     }
                 }
             }
