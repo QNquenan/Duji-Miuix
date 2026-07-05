@@ -176,36 +176,61 @@ fun MyItemsScreen(
         selectedDay = currentDay
     }
 
-    val sortEntry = remember(currentSort) {
-        DropdownEntry(
-            items = listOf(
-                DropdownItem(
-                    text = buildSortMenuTitle("创建时间", currentSort, ItemSortField.CREATED_AT),
-                    children = listOf(
-                        DropdownItem(
-                            text = sortDirectionLabel(SortDirection.ASC),
-                            onClick = { viewModel.updateSort(ItemSortField.CREATED_AT, SortDirection.ASC) },
-                        ),
-                        DropdownItem(
-                            text = sortDirectionLabel(SortDirection.DESC),
-                            onClick = { viewModel.updateSort(ItemSortField.CREATED_AT, SortDirection.DESC) },
+    val sortEntries = remember(currentSort) {
+        listOf(
+            DropdownEntry(
+                items = listOf(
+                    DropdownItem(
+                        text = "创建时间",
+                        selected = currentSort.field == ItemSortField.CREATED_AT,
+                        onClick = {
+                            viewModel.updateSort(
+                                ItemSortField.CREATED_AT,
+                                currentSort.direction,
+                            )
+                        },
+                    ),
+                    DropdownItem(
+                        text = "购买日期",
+                        selected = currentSort.field == ItemSortField.PURCHASE_DATE,
+                        onClick = {
+                            viewModel.updateSort(
+                                ItemSortField.PURCHASE_DATE,
+                                currentSort.direction,
+                            )
+                        },
+                    ),
+                )
+            ),
+            DropdownEntry(
+                items = listOf(
+                    DropdownItem(
+                        text = buildSortDirectionMenuTitle(currentSort.direction),
+                        children = listOf(
+                            DropdownItem(
+                                text = sortDirectionLabel(SortDirection.ASC),
+                                selected = currentSort.direction == SortDirection.ASC,
+                                onClick = {
+                                    viewModel.updateSort(
+                                        currentSort.field,
+                                        SortDirection.ASC,
+                                    )
+                                },
+                            ),
+                            DropdownItem(
+                                text = sortDirectionLabel(SortDirection.DESC),
+                                selected = currentSort.direction == SortDirection.DESC,
+                                onClick = {
+                                    viewModel.updateSort(
+                                        currentSort.field,
+                                        SortDirection.DESC,
+                                    )
+                                },
+                            ),
                         ),
                     ),
-                ),
-                DropdownItem(
-                    text = buildSortMenuTitle("购买日期", currentSort, ItemSortField.PURCHASE_DATE),
-                    children = listOf(
-                        DropdownItem(
-                            text = sortDirectionLabel(SortDirection.ASC),
-                            onClick = { viewModel.updateSort(ItemSortField.PURCHASE_DATE, SortDirection.ASC) },
-                        ),
-                        DropdownItem(
-                            text = sortDirectionLabel(SortDirection.DESC),
-                            onClick = { viewModel.updateSort(ItemSortField.PURCHASE_DATE, SortDirection.DESC) },
-                        ),
-                    ),
-                ),
-            )
+                )
+            ),
         )
     }
 
@@ -215,7 +240,7 @@ fun MyItemsScreen(
                 title = "我的物品",
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    OverlayIconCascadingDropdownMenu(entry = sortEntry) {
+                    OverlayIconCascadingDropdownMenu(entries = sortEntries) {
                         Icon(
                             imageVector = MiuixIcons.More,
                             contentDescription = "排序",
@@ -871,13 +896,8 @@ private fun daysSince(dateString: String): Int {
     }
 }
 
-private fun buildSortMenuTitle(
-    title: String,
-    currentSort: ItemSortOption,
-    field: ItemSortField,
-): String {
-    if (currentSort.field != field) return title
-    return "$title（${sortDirectionLabel(currentSort.direction)}）"
+private fun buildSortDirectionMenuTitle(direction: SortDirection): String {
+    return "正倒序（${sortDirectionLabel(direction)}）"
 }
 
 private fun sortDirectionLabel(direction: SortDirection): String {
