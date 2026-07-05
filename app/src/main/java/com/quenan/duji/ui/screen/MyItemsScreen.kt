@@ -118,6 +118,7 @@ fun MyItemsScreen(
     var itemDate by remember { mutableStateOf("") }
     var itemNote by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf<ItemData?>(null) }
     val viewModel: MyItemsViewModel = viewModel()
     val items by viewModel.items.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
@@ -184,14 +185,8 @@ fun MyItemsScreen(
                         avgPrice = "¥${item.price / maxOf(1, daysSince(item.date))}/天",
                         totalPrice = "¥${item.price}",
                         isPinned = item.isPinned,
-                        onDelete = {
-                            viewModel.deleteItem(item)
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = "已删除 ${item.name}",
-                                    duration = SnackbarDuration.Custom(2000)
-                                )
-                            }
+                        onClick = {
+                            selectedItem = item
                         }
                     )
                 }
@@ -211,6 +206,58 @@ fun MyItemsScreen(
                     contentDescription = "添加",
                     tint = Color.White,
                 )
+            }
+
+            selectedItem?.let { detailItem ->
+                WindowBottomSheet(
+                    show = true,
+                    title = detailItem.name,
+                    backgroundColor = Color(0xFFF7F7F7),
+                    startAction = {
+                        val dismiss = LocalDismissState.current
+                        IconButton(onClick = {
+                            selectedItem = null
+                            dismiss?.invoke()
+                        }) {
+                            Icon(
+                                imageVector = MiuixIcons.Close,
+                                contentDescription = "关闭",
+                                tint = MiuixTheme.colorScheme.onBackground,
+                            )
+                        }
+                    },
+                    onDismissRequest = { selectedItem = null },
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        SmallTitle(text = "详细信息", modifier = Modifier.fillMaxWidth())
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            insideMargin = PaddingValues(16.dp),
+                            colors = CardDefaults.defaultColors(
+                                color = MiuixTheme.colorScheme.surfaceContainer,
+                            ),
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                DetailRow(label = "图标", value = detailItem.icon)
+                                DetailRow(label = "名称", value = detailItem.name)
+                                DetailRow(label = "购买日期", value = detailItem.date)
+                                DetailRow(label = "总价格", value = "¥${detailItem.price}")
+                                DetailRow(label = "日均价格", value = "¥${detailItem.price / maxOf(1, daysSince(detailItem.date))}/天")
+                                DetailRow(label = "备注", value = if (detailItem.note.isBlank()) "未填写" else detailItem.note)
+                                DetailRow(label = "置顶", value = if (detailItem.isPinned) "是" else "否")
+                            }
+                        }
+                    }
+                }
             }
 
             // WindowBottomSheet - 点击 FAB 时弹出
@@ -267,7 +314,7 @@ fun MyItemsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                        .padding(vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -358,10 +405,9 @@ fun MyItemsScreen(
                         }
                     }
 
-                    SmallTitle(text = "置顶", modifier = Modifier.fillMaxWidth())
+                    SmallTitle(text = "功能", modifier = Modifier.fillMaxWidth())
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(16.dp),
                         colors = CardDefaults.defaultColors(
                             color = MiuixTheme.colorScheme.surfaceContainer,
                         ),
@@ -645,14 +691,14 @@ private fun ItemListCard(
     avgPrice: String,
     totalPrice: String,
     isPinned: Boolean = false,
-    onDelete: () -> Unit,
+    onClick: () -> Unit,
 ) {
     Card(
         colors = CardDefaults.defaultColors(
             color = MiuixTheme.colorScheme.surfaceContainer
         ),
         insideMargin = PaddingValues(16.dp),
-        onClick = onDelete,
+        onClick = onClick,
         showIndication = true,
         pressFeedbackType = PressFeedbackType.Tilt
     ) {
@@ -785,6 +831,29 @@ private fun StatsCard(stats: ItemStats) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    value: String,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = MiuixTheme.colorScheme.onSurfaceSecondary,
+        )
+        Text(
+            text = value,
+            fontSize = 16.sp,
+            color = MiuixTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        )
     }
 }
 
