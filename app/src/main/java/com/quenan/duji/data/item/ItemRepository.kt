@@ -30,6 +30,15 @@ class ItemRepository(context: Context) {
         }
     }
 
+    suspend fun updateItem(item: ItemData) {
+        dataStore.edit { preferences ->
+            val updatedItems = decodeItems(preferences[ITEMS_KEY].orEmpty()).map { current ->
+                if (current.id == item.id) item else current
+            }
+            preferences[ITEMS_KEY] = encodeItems(updatedItems)
+        }
+    }
+
     suspend fun deleteItem(item: ItemData) {
         dataStore.edit { preferences ->
             val filteredItems = decodeItems(preferences[ITEMS_KEY].orEmpty())

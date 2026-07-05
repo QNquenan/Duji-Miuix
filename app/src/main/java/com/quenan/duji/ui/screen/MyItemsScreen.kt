@@ -121,6 +121,8 @@ fun MyItemsScreen(
     var isPinned by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<ItemData?>(null) }
     var showDetailBottomSheet by remember { mutableStateOf(false) }
+    var editingItem by remember { mutableStateOf<ItemData?>(null) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     val viewModel: MyItemsViewModel = viewModel()
     val items by viewModel.items.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
@@ -138,6 +140,22 @@ fun MyItemsScreen(
     var selectedYear by remember { mutableIntStateOf(currentYear) }
     var selectedMonth by remember { mutableIntStateOf(currentMonth) }
     var selectedDay by remember { mutableIntStateOf(currentDay) }
+    fun populateForm(item: ItemData) {
+        itemName = item.name
+        itemPrice = item.price.toString()
+        itemDate = item.date
+        itemNote = item.note
+        isPinned = item.isPinned
+        selectedIcon = item.icon
+        customIconText = ""
+        val parts = item.date.split("-")
+        if (parts.size == 3) {
+            selectedYear = parts[0].toIntOrNull() ?: currentYear
+            selectedMonth = parts[1].toIntOrNull() ?: currentMonth
+            selectedDay = parts[2].toIntOrNull() ?: currentDay
+        }
+    }
+
     fun resetAddForm() {
         itemName = ""
         itemPrice = ""
@@ -218,15 +236,37 @@ fun MyItemsScreen(
                     backgroundColor = Color(0xFFF7F7F7),
                     startAction = {
                         val dismiss = LocalDismissState.current
-                        IconButton(onClick = {
-                            showDetailBottomSheet = false
-                            dismiss?.invoke()
-                        }) {
-                            Icon(
-                                imageVector = MiuixIcons.Close,
-                                contentDescription = "关闭",
-                                tint = MiuixTheme.colorScheme.onBackground,
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(
+                                text = "删除",
+                                onClick = {
+                                    showDeleteConfirmDialog = true
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    textColor = Color(0xFFFF3B30),
+                                ),
                             )
+                            TextButton(
+                                text = "修改",
+                                onClick = {
+                                    populateForm(detailItem)
+                                    editingItem = detailItem
+                                    showDetailBottomSheet = false
+                                    dismiss?.invoke()
+                                    showBottomSheet = true
+                                },
+                                colors = ButtonDefaults.textButtonColorsPrimary(),
+                            )
+                            IconButton(onClick = {
+                                showDetailBottomSheet = false
+                                dismiss?.invoke()
+                            }) {
+                                Icon(
+                                    imageVector = MiuixIcons.Close,
+                                    contentDescription = "关闭",
+                                    tint = MiuixTheme.colorScheme.onBackground,
+                                )
+                            }
                         }
                     },
                     onDismissRequest = { showDetailBottomSheet = false },
@@ -283,19 +323,72 @@ fun MyItemsScreen(
                                 }
                             }
                         }
+
+                        // 底部间距
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
 
-            // 添加物品底部抽屉
+            if (showDeleteConfirmDialog && selectedItem != null) {
+                WindowDialog(
+                    title = "删除物品",
+                    show = true,
+                    onDismissRequest = { showDeleteConfirmDialog = false },
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            text = "确认删除 ${selectedItem?.name} 吗？",
+                            color = MiuixTheme.colorScheme.onBackground,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(
+                                text = "取消",
+                                onClick = { showDeleteConfirmDialog = false },
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(
+                                text = "删除",
+                                onClick = {
+                                    selectedItem?.let { item ->
+                                        viewModel.deleteItem(item)
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                message = "删除成功",
+                                                duration = SnackbarDuration.Custom(2000)
+                                            )
+                                        }
+                                    }
+                                    showDeleteConfirmDialog = false
+                                    showDetailBottomSheet = false
+                                    selectedItem = null
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.textButtonColors(
+                                    textColor = Color(0xFFFF3B30),
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 添加/修改物品底部抽屉
             WindowBottomSheet(
                 show = showBottomSheet,
-                title = "添加物品",
+                title = if (editingItem == null) "添加物品" else "修改物品",
                 backgroundColor = Color(0xFFF7F7F7),
                 startAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
                         resetAddForm()
+                        editingItem = null
                         dismiss?.invoke()
                     }) {
                         Icon(
@@ -309,21 +402,34 @@ fun MyItemsScreen(
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
                         if (itemName.isNotBlank() && itemPrice.isNotBlank() && itemDate.isNotBlank()) {
-                            viewModel.addItem(
-                                icon = selectedIcon,
-                                name = itemName,
-                                date = itemDate,
-                                price = itemPrice,
-                                note = itemNote,
-                                isPinned = isPinned,
-                            )
+                            if (editingItem == null) {
+                                viewModel.addItem(
+                                    icon = selectedIcon,
+                                    name = itemName,
+                                    date = itemDate,
+                                    price = itemPrice,
+                                    note = itemNote,
+                                    isPinned = isPinned,
+                                )
+                            } else {
+                                viewModel.updateItem(
+                                    id = editingItem!!.id,
+                                    icon = selectedIcon,
+                                    name = itemName,
+                                    date = itemDate,
+                                    price = itemPrice,
+                                    note = itemNote,
+                                    isPinned = isPinned,
+                                )
+                            }
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    message = "添加成功😋",
+                                    message = if (editingItem == null) "添加成功😋" else "修改成功😋",
                                     duration = SnackbarDuration.Custom(2000)
                                 )
                             }
                             resetAddForm()
+                            editingItem = null
                             dismiss?.invoke()
                         }
                     }) {
@@ -334,7 +440,10 @@ fun MyItemsScreen(
                         )
                     }
                 },
-                onDismissRequest = { showBottomSheet = false },
+                onDismissRequest = {
+                    showBottomSheet = false
+                    editingItem = null
+                },
             ) {
                 // BottomSheet 内容区域 - 可滚动
                 Column(
@@ -364,7 +473,7 @@ fun MyItemsScreen(
                         )
                     }
 
-                    SmallTitle(text = "信息", modifier = Modifier.fillMaxWidth())
+                    SmallTitle(text = "信息",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp),
@@ -432,7 +541,7 @@ fun MyItemsScreen(
                         }
                     }
 
-                    SmallTitle(text = "功能", modifier = Modifier.fillMaxWidth())
+                    SmallTitle(text = "功能",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.defaultColors(

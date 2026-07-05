@@ -46,6 +46,31 @@ class MyItemsViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun updateItem(
+        id: Long,
+        icon: String,
+        name: String,
+        date: String,
+        price: String,
+        note: String,
+        isPinned: Boolean,
+    ) {
+        val parsedPrice = price.toIntOrNull() ?: return
+        viewModelScope.launch {
+            repository.updateItem(
+                ItemData(
+                    id = id,
+                    icon = icon,
+                    name = name.trim(),
+                    date = date,
+                    price = parsedPrice,
+                    note = note,
+                    isPinned = isPinned,
+                )
+            )
+        }
+    }
+
     fun deleteItem(item: ItemData) {
         viewModelScope.launch {
             repository.deleteItem(item)
