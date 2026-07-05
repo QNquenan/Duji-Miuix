@@ -10,6 +10,7 @@ data class ItemData(
     val price: Int,
     val note: String,
     val isPinned: Boolean,
+    val createdAt: Long,
 )
 
 data class ItemStats(
@@ -26,17 +27,22 @@ fun List<ItemData>.toStats(): ItemStats = ItemStats(
     },
 )
 
-private fun daysSince(dateString: String): Int {
-    return try {
+fun parseItemDateToMillis(dateString: String): Long? {
+    return runCatching {
         val parts = dateString.split("-")
         val year = parts[0].toInt()
         val month = parts[1].toInt()
         val day = parts[2].toInt()
-        val purchase = Calendar.getInstance().apply { set(year, month - 1, day) }
-        val now = Calendar.getInstance()
-        val diff = now.timeInMillis - purchase.timeInMillis
+        Calendar.getInstance().apply {
+            set(year, month - 1, day, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }.getOrNull()
+}
+
+private fun daysSince(dateString: String): Int {
+    return parseItemDateToMillis(dateString)?.let { purchaseMillis ->
+        val diff = Calendar.getInstance().timeInMillis - purchaseMillis
         maxOf(1, (diff / (1000 * 60 * 60 * 24)).toInt())
-    } catch (_: Exception) {
-        1
-    }
+    } ?: 1
 }

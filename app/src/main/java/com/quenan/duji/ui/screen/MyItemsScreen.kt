@@ -56,6 +56,8 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -77,8 +79,10 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Pin
 import top.yukonga.miuix.kmp.icon.extended.Years
+import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -127,6 +131,7 @@ fun MyItemsScreen(
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     val viewModel: MyItemsViewModel = viewModel()
     val items by viewModel.items.collectAsStateWithLifecycle()
+    val currentSort by viewModel.currentSort.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val showNotice = rememberNoticeAction()
@@ -171,11 +176,53 @@ fun MyItemsScreen(
         selectedDay = currentDay
     }
 
+    val sortEntry = remember(currentSort) {
+        DropdownEntry(
+            items = listOf(
+                DropdownItem(
+                    text = buildSortMenuTitle("创建时间", currentSort, ItemSortField.CREATED_AT),
+                    children = listOf(
+                        DropdownItem(
+                            text = sortDirectionLabel(SortDirection.ASC),
+                            onClick = { viewModel.updateSort(ItemSortField.CREATED_AT, SortDirection.ASC) },
+                        ),
+                        DropdownItem(
+                            text = sortDirectionLabel(SortDirection.DESC),
+                            onClick = { viewModel.updateSort(ItemSortField.CREATED_AT, SortDirection.DESC) },
+                        ),
+                    ),
+                ),
+                DropdownItem(
+                    text = buildSortMenuTitle("购买日期", currentSort, ItemSortField.PURCHASE_DATE),
+                    children = listOf(
+                        DropdownItem(
+                            text = sortDirectionLabel(SortDirection.ASC),
+                            onClick = { viewModel.updateSort(ItemSortField.PURCHASE_DATE, SortDirection.ASC) },
+                        ),
+                        DropdownItem(
+                            text = sortDirectionLabel(SortDirection.DESC),
+                            onClick = { viewModel.updateSort(ItemSortField.PURCHASE_DATE, SortDirection.DESC) },
+                        ),
+                    ),
+                ),
+            )
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = "我的物品",
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    OverlayIconCascadingDropdownMenu(entry = sortEntry) {
+                        Icon(
+                            imageVector = MiuixIcons.More,
+                            contentDescription = "排序",
+                            tint = MiuixTheme.colorScheme.onBackground,
+                        )
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -821,6 +868,22 @@ private fun daysSince(dateString: String): Int {
         maxOf(1, (diff / (1000 * 60 * 60 * 24)).toInt())
     } catch (_: Exception) {
         1
+    }
+}
+
+private fun buildSortMenuTitle(
+    title: String,
+    currentSort: ItemSortOption,
+    field: ItemSortField,
+): String {
+    if (currentSort.field != field) return title
+    return "$title（${sortDirectionLabel(currentSort.direction)}）"
+}
+
+private fun sortDirectionLabel(direction: SortDirection): String {
+    return when (direction) {
+        SortDirection.ASC -> "升序"
+        SortDirection.DESC -> "倒序"
     }
 }
 

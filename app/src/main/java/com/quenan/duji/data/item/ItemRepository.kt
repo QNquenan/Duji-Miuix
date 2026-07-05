@@ -25,7 +25,7 @@ class ItemRepository(context: Context) {
         dataStore.edit { preferences ->
             val items = decodeItems(preferences[ITEMS_KEY].orEmpty()).toMutableList()
             val nextId = (items.maxOfOrNull(ItemData::id) ?: 0L) + 1L
-            items.add(item.copy(id = nextId))
+            items.add(item.copy(id = nextId, createdAt = System.currentTimeMillis()))
             preferences[ITEMS_KEY] = encodeItems(items)
         }
     }
@@ -63,6 +63,8 @@ class ItemRepository(context: Context) {
                             price = obj.optInt("price"),
                             note = obj.optString("note"),
                             isPinned = obj.optBoolean("isPinned"),
+                            createdAt = obj.optLong("createdAt").takeIf { it > 0L }
+                                ?: estimateCreatedAt(obj.optString("date"), obj.optLong("id")),
                         )
                     )
                 }
@@ -82,10 +84,16 @@ class ItemRepository(context: Context) {
                     put("price", item.price)
                     put("note", item.note)
                     put("isPinned", item.isPinned)
+                    put("createdAt", item.createdAt)
                 }
             )
         }
         return array.toString()
+    }
+
+    private fun estimateCreatedAt(date: String, id: Long): Long {
+        val baseTime = parseItemDateToMillis(date) ?: 0L
+        return if (baseTime > 0L) baseTime + id else id
     }
 
     private companion object {
