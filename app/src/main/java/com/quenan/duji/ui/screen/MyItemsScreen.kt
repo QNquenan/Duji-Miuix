@@ -259,7 +259,7 @@ fun MyItemsScreen(
                             )
                         }
 
-                        SmallTitle(text = "详细信息", modifier = Modifier.fillMaxWidth())
+                        SmallTitle(text = "详细信息",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(16.dp),
@@ -287,7 +287,7 @@ fun MyItemsScreen(
                 }
             }
 
-            // WindowBottomSheet - 点击 FAB 时弹出
+            // 添加物品底部抽屉
             WindowBottomSheet(
                 show = showBottomSheet,
                 title = "添加物品",
