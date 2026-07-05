@@ -322,10 +322,22 @@ fun MyItemsScreen(
                                 DetailRow(label = "总价格", value = "¥${detailItem.price}")
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
                                 DetailRow(label = "日均价格", value = "¥${detailItem.price / maxOf(1, daysSince(detailItem.date))}/天")
-                                if (detailItem.note.isNotBlank()) {
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                                    DetailRow(label = "备注", value = detailItem.note)
-                                }
+                            }
+                        }
+                        if (detailItem.note.isNotBlank()) {
+                            SmallTitle(text = "备注", insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                insideMargin = PaddingValues(16.dp),
+                                colors = CardDefaults.defaultColors(
+                                    color = MiuixTheme.colorScheme.surfaceContainer,
+                                ),
+                            ) {
+                                Text(
+                                    text = detailItem.note,
+                                    fontSize = 16.sp,
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                )
                             }
                         }
 
@@ -971,12 +983,12 @@ private fun DetailRow(
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
-            color = MiuixTheme.colorScheme.onSurfaceSecondary,
+            fontSize = 16.sp,
+            color = MiuixTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
