@@ -589,14 +589,21 @@ fun MyItemsScreen(
                                 shape = RoundedCornerShape(16.dp),
                                 color = MiuixTheme.colorScheme.secondaryContainer,
                             ) {
-                                Box(
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 16.dp),
-                                    contentAlignment = Alignment.CenterStart
+                                    verticalArrangement = Arrangement.spacedBy(2.dp),
                                 ) {
+                                    if (itemDate.isNotEmpty()) {
+                                        Text(
+                                            text = "购买日期",
+                                            color = MiuixTheme.colorScheme.primary,
+                                            fontSize = 10.sp,
+                                        )
+                                    }
                                     Text(
-                                        text = if (itemDate.isEmpty()) "请选择购买日期" else itemDate,
+                                        text = if (itemDate.isEmpty()) "购买日期" else itemDate,
                                         color = if (itemDate.isEmpty()) MiuixTheme.colorScheme.onSecondaryContainer else MiuixTheme.colorScheme.onBackground,
                                         style = MiuixTheme.textStyles.main,
                                     )
