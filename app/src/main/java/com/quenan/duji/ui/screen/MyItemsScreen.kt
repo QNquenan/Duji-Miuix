@@ -565,8 +565,7 @@ fun MyItemsScreen(
                             TextField(
                                 value = itemName,
                                 onValueChange = { itemName = it },
-                                label = "请输入名称",
-                                useLabelAsPlaceholder = true,
+                                label = "名称",
                                 modifier = Modifier.fillMaxWidth(),
                                 maxLines = 1,
                             )
@@ -578,8 +577,7 @@ fun MyItemsScreen(
                                         itemPrice = it
                                     }
                                 },
-                                label = "请输入价格",
-                                useLabelAsPlaceholder = true,
+                                label = "价格",
                                 modifier = Modifier.fillMaxWidth(),
                                 maxLines = 1,
                                 keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
@@ -609,7 +607,6 @@ fun MyItemsScreen(
                                 value = itemNote,
                                 onValueChange = { itemNote = it },
                                 label = "备注",
-                                useLabelAsPlaceholder = true,
                                 singleLine = false,
                                 minLines = 3,
                                 maxLines = 5,
