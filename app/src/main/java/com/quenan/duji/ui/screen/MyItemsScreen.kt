@@ -518,6 +518,7 @@ fun MyItemsScreen(
                     }
                 },
                 onDismissRequest = {
+                    resetAddForm()
                     showBottomSheet = false
                     editingItem = null
                 },
@@ -603,7 +604,7 @@ fun MyItemsScreen(
                                     if (itemDate.isNotEmpty()) {
                                         Text(
                                             text = "购买日期",
-                                            color = MiuixTheme.colorScheme.primary,
+                                            color = MiuixTheme.colorScheme.onSecondaryContainer,
                                             fontSize = 10.sp,
                                         )
                                     }
