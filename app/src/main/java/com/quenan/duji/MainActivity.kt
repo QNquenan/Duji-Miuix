@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                         ) { page ->
                             when (page) {
                                 0 -> MyItemsScreen(contentPadding = PaddingValues(bottom = bottomPadding))
-                                1 -> ThoseDaysScreen()
+                                1 -> ThoseDaysScreen(contentPadding = PaddingValues(bottom = bottomPadding))
                                 2 -> SettingsScreen()
                             }
                         }

@@ -367,7 +367,7 @@ fun MyItemsScreen(
                 WindowBottomSheet(
                     show = showDetailBottomSheet,
                     title = "物品详情",
-                    backgroundColor = MiuixTheme.colorScheme.background,
+                    backgroundColor = MiuixTheme.colorScheme.surface,
                     startAction = {
                         val dismiss = LocalDismissState.current
                         IconButton(onClick = {
@@ -526,7 +526,7 @@ fun MyItemsScreen(
             WindowBottomSheet(
                 show = showBottomSheet,
                 title = if (editingItem == null) "添加物品" else "修改物品",
-                backgroundColor = MiuixTheme.colorScheme.background,
+                backgroundColor = MiuixTheme.colorScheme.surface,
                 startAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
