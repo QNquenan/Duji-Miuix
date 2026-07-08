@@ -77,7 +77,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.All
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -85,11 +84,11 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Pin
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.extended.Years
 import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -154,7 +153,6 @@ fun MyItemsScreen(
     var selectedYear by remember { mutableIntStateOf(currentYear) }
     var selectedMonth by remember { mutableIntStateOf(currentMonth) }
     var selectedDay by remember { mutableIntStateOf(currentDay) }
-    var showViewModePopup by remember { mutableStateOf(false) }
     var itemViewMode by remember { mutableStateOf(ItemViewMode.List) }
     fun populateForm(item: ItemData) {
         itemName = item.name
@@ -249,31 +247,18 @@ fun MyItemsScreen(
                 title = "我的物品",
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    Box {
-                        IconButton(onClick = { showViewModePopup = true }) {
-                            Icon(
-                                imageVector = MiuixIcons.All,
-                                contentDescription = "切换视图",
-                                tint = MiuixTheme.colorScheme.onBackground,
-                            )
+                    IconButton(onClick = {
+                        itemViewMode = if (itemViewMode == ItemViewMode.List) {
+                            ItemViewMode.Grid
+                        } else {
+                            ItemViewMode.List
                         }
-                        OverlayListPopup(
-                            show = showViewModePopup,
-                            onDismissRequest = { showViewModePopup = false },
-                        ) {
-                            ListPopupColumn {
-                                ItemViewMode.entries.forEach { mode ->
-                                    DropdownItem(
-                                        text = mode.label,
-                                        selected = itemViewMode == mode,
-                                        onClick = {
-                                            itemViewMode = mode
-                                            showViewModePopup = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                    }) {
+                        Icon(
+                            imageVector = if (itemViewMode == ItemViewMode.Grid) MiuixIcons.All else MiuixIcons.ListView,
+                            contentDescription = "切换视图",
+                            tint = MiuixTheme.colorScheme.onBackground,
+                        )
                     }
                     OverlayIconCascadingDropdownMenu(entries = sortEntries) {
                         Icon(
