@@ -41,7 +41,6 @@ import java.util.Calendar
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -59,7 +58,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -137,24 +136,6 @@ fun ThoseDaysScreen(
     var dayNote by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
     var selectedEmoji by remember { mutableStateOf<String?>(null) }
-    val typeDropdownItems = remember(typeOptions, dayType) {
-        typeOptions.map { option ->
-            DropdownItem(
-                text = option,
-                selected = option == dayType,
-                onClick = { dayType = option },
-            )
-        }
-    }
-    val repeatDropdownItems = remember(repeatOptions, repeatCycle) {
-        repeatOptions.map { option ->
-            DropdownItem(
-                text = option,
-                selected = option == repeatCycle,
-                onClick = { repeatCycle = option },
-            )
-        }
-    }
 
     val calendar = remember { Calendar.getInstance() }
     val currentYear = calendar.get(Calendar.YEAR)
@@ -326,16 +307,16 @@ fun ThoseDaysScreen(
                                 maxLines = 1,
                             )
 
-                            OverlaySpinnerPreference(
+                            WindowDropdownPreference(
                                 title = "类型",
-                                items = typeDropdownItems,
+                                items = typeOptions,
                                 selectedIndex = typeOptions.indexOf(dayType),
                                 onSelectedIndexChange = { dayType = typeOptions[it] },
                             )
 
-                            OverlaySpinnerPreference(
+                            WindowDropdownPreference(
                                 title = "重复周期",
-                                items = repeatDropdownItems,
+                                items = repeatOptions,
                                 selectedIndex = repeatOptions.indexOf(repeatCycle),
                                 onSelectedIndexChange = { repeatCycle = repeatOptions[it] },
                             )
