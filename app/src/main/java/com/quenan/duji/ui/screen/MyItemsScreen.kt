@@ -331,6 +331,7 @@ fun MyItemsScreen(
                             icon = item.icon,
                             name = item.name,
                             date = item.date,
+                            avgPrice = "¥${item.price / maxOf(1, daysSince(item.date))}/天",
                             totalPrice = "¥${item.price}",
                             isPinned = item.isPinned,
                             onClick = {
@@ -366,7 +367,7 @@ fun MyItemsScreen(
                 WindowBottomSheet(
                     show = showDetailBottomSheet,
                     title = "物品详情",
-                    backgroundColor = Color(0xFFF7F7F7),
+                    backgroundColor = MiuixTheme.colorScheme.background,
                     startAction = {
                         val dismiss = LocalDismissState.current
                         IconButton(onClick = {
@@ -525,7 +526,7 @@ fun MyItemsScreen(
             WindowBottomSheet(
                 show = showBottomSheet,
                 title = if (editingItem == null) "添加物品" else "修改物品",
-                backgroundColor = Color(0xFFF7F7F7),
+                backgroundColor = MiuixTheme.colorScheme.background,
                 startAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
@@ -1090,6 +1091,7 @@ private fun ItemGridCard(
     icon: String,
     name: String,
     date: String,
+    avgPrice: String,
     totalPrice: String,
     isPinned: Boolean = false,
     onClick: () -> Unit,
@@ -1155,12 +1157,21 @@ private fun ItemGridCard(
                     maxLines = 1,
                 )
             }
-            Text(
-                text = totalPrice,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MiuixTheme.colorScheme.onSurface,
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = avgPrice,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = totalPrice,
+                    fontSize = 12.sp,
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                )
+            }
         }
     }
 }
