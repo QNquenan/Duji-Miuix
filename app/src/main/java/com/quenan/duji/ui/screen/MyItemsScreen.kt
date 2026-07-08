@@ -293,7 +293,11 @@ fun MyItemsScreen(
                     .padding(contentPadding)
                     .padding(end = 16.dp, bottom = 16.dp)
                     .offset(y = fabBottomOffset),
-                onClick = { showBottomSheet = true },
+                onClick = {
+                    resetAddForm()
+                    editingItem = null
+                    showBottomSheet = true
+                },
             ) {
                 Icon(
                     imageVector = MiuixIcons.Add,
@@ -469,7 +473,6 @@ fun MyItemsScreen(
                 startAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
-                        resetAddForm()
                         editingItem = null
                         dismiss?.invoke()
                     }) {
@@ -505,7 +508,6 @@ fun MyItemsScreen(
                                 )
                             }
                             showNotice(if (editingItem == null) "添加成功😋" else "修改成功😋")
-                            resetAddForm()
                             editingItem = null
                             dismiss?.invoke()
                         }
@@ -518,7 +520,9 @@ fun MyItemsScreen(
                     }
                 },
                 onDismissRequest = {
-                    resetAddForm()
+                    showIconDialog = false
+                    showCustomIconDialog = false
+                    showDateDialog = false
                     showBottomSheet = false
                     editingItem = null
                 },
