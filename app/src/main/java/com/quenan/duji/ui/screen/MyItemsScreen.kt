@@ -592,7 +592,12 @@ fun MyItemsScreen(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                                        .padding(
+                                            start = 16.dp,
+                                            end = 16.dp,
+                                            top = if (itemDate.isEmpty()) 17.dp else 11.dp,
+                                            bottom = if (itemDate.isEmpty()) 17.dp else 11.dp,
+                                        ),
                                     verticalArrangement = Arrangement.spacedBy(2.dp),
                                 ) {
                                     if (itemDate.isNotEmpty()) {
