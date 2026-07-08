@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -74,15 +77,19 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.All
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Pin
+import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.extended.Years
 import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -147,6 +154,8 @@ fun MyItemsScreen(
     var selectedYear by remember { mutableIntStateOf(currentYear) }
     var selectedMonth by remember { mutableIntStateOf(currentMonth) }
     var selectedDay by remember { mutableIntStateOf(currentDay) }
+    var showViewModePopup by remember { mutableStateOf(false) }
+    var itemViewMode by remember { mutableStateOf(ItemViewMode.List) }
     fun populateForm(item: ItemData) {
         itemName = item.name
         itemPrice = item.price.toString()
@@ -240,9 +249,35 @@ fun MyItemsScreen(
                 title = "我的物品",
                 scrollBehavior = scrollBehavior,
                 actions = {
+                    Box {
+                        IconButton(onClick = { showViewModePopup = true }) {
+                            Icon(
+                                imageVector = MiuixIcons.All,
+                                contentDescription = "切换视图",
+                                tint = MiuixTheme.colorScheme.onBackground,
+                            )
+                        }
+                        OverlayListPopup(
+                            show = showViewModePopup,
+                            onDismissRequest = { showViewModePopup = false },
+                        ) {
+                            ListPopupColumn {
+                                ItemViewMode.entries.forEach { mode ->
+                                    DropdownItem(
+                                        text = mode.label,
+                                        selected = itemViewMode == mode,
+                                        onClick = {
+                                            itemViewMode = mode
+                                            showViewModePopup = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     OverlayIconCascadingDropdownMenu(entries = sortEntries) {
                         Icon(
-                            imageVector = MiuixIcons.More,
+                            imageVector = MiuixIcons.Sort,
                             contentDescription = "排序",
                             tint = MiuixTheme.colorScheme.onBackground,
                         )
@@ -254,35 +289,71 @@ fun MyItemsScreen(
         Box(
             modifier = modifier.fillMaxSize()
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(fabScrollConnection)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    top = innerPadding.calculateTopPadding() + 12.dp,
-                    bottom = contentPadding.calculateBottomPadding() + 12.dp,
-                    start = 12.dp,
-                    end = 12.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    StatsCard(stats = stats)
+            if (itemViewMode == ItemViewMode.List) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(fabScrollConnection)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        top = innerPadding.calculateTopPadding() + 12.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 12.dp,
+                        start = 12.dp,
+                        end = 12.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item {
+                        StatsCard(stats = stats)
+                    }
+                    items(items, key = { it.id }) { item ->
+                        ItemListCard(
+                            icon = item.icon,
+                            name = item.name,
+                            date = item.date,
+                            avgPrice = "¥${item.price / maxOf(1, daysSince(item.date))}/天",
+                            totalPrice = "¥${item.price}",
+                            isPinned = item.isPinned,
+                            onClick = {
+                                selectedItem = item
+                                showDetailBottomSheet = true
+                            }
+                        )
+                    }
                 }
-                items(items, key = { it.id }) { item ->
-                    ItemListCard(
-                        icon = item.icon,
-                        name = item.name,
-                        date = item.date,
-                        avgPrice = "¥${item.price / maxOf(1, daysSince(item.date))}/天",
-                        totalPrice = "¥${item.price}",
-                        isPinned = item.isPinned,
-                        onClick = {
-                            selectedItem = item
-                            showDetailBottomSheet = true
-                        }
-                    )
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(fabScrollConnection)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        top = innerPadding.calculateTopPadding() + 12.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 12.dp,
+                        start = 12.dp,
+                        end = 12.dp,
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                        StatsCard(stats = stats)
+                    }
+                    items(items.size, key = { items[it].id }) { index ->
+                        val item = items[index]
+                        ItemGridCard(
+                            icon = item.icon,
+                            name = item.name,
+                            date = item.date,
+                            totalPrice = "¥${item.price}",
+                            isPinned = item.isPinned,
+                            onClick = {
+                                selectedItem = item
+                                showDetailBottomSheet = true
+                            }
+                        )
+                    }
                 }
             }
 
@@ -895,6 +966,11 @@ fun MyItemsScreen(
     }
 }
 
+private enum class ItemViewMode(val label: String) {
+    List("列表"),
+    Grid("块状"),
+}
+
 private fun daysSince(dateString: String): Int {
     return try {
         val parts = dateString.split("-")
@@ -1024,6 +1100,86 @@ private fun ItemListCard(
     }
 }
 
+@Composable
+private fun ItemGridCard(
+    icon: String,
+    name: String,
+    date: String,
+    totalPrice: String,
+    isPinned: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f),
+        colors = CardDefaults.defaultColors(
+            color = MiuixTheme.colorScheme.surfaceContainer
+        ),
+        insideMargin = PaddingValues(14.dp),
+        onClick = onClick,
+        showIndication = true,
+        pressFeedbackType = PressFeedbackType.Tilt
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            color = MiuixTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = icon,
+                        fontSize = 22.sp,
+                    )
+                }
+                if (isPinned) {
+                    Icon(
+                        imageVector = MiuixIcons.Pin,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color(0xFFFF9500)
+                    )
+                }
+            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                )
+                Text(
+                    text = date,
+                    fontSize = 12.sp,
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                    maxLines = 1,
+                )
+            }
+            Text(
+                text = totalPrice,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
 // ... 以下 StatsCard / StatItem 保持原样 ...
 @Composable
 private fun StatsCard(stats: ItemStats) {
@@ -1085,6 +1241,7 @@ private fun DetailRow(
         Text(
             text = label,
             fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -1092,8 +1249,7 @@ private fun DetailRow(
             text = value,
             modifier = Modifier.weight(1f),
             fontSize = 16.sp,
-            color = MiuixTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             textAlign = TextAlign.End,
         )
     }
