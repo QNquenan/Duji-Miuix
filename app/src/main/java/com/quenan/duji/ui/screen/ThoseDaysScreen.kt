@@ -66,7 +66,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.basic.TabRow
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -436,6 +436,7 @@ fun ThoseDaysScreen(
                                 items = typeOptions,
                                 selectedIndex = typeOptions.indexOf(dayType),
                                 onSelectedIndexChange = { applyTypeChange(typeOptions[it]) },
+                                modifier = Modifier.padding(horizontal = 16.dp),
                             )
 
                             if (dayType == "倒/正数日") {
@@ -444,6 +445,7 @@ fun ThoseDaysScreen(
                                     items = repeatOptions,
                                     selectedIndex = repeatOptions.indexOf(repeatCycle),
                                     onSelectedIndexChange = { applyRepeatCycleChange(repeatOptions[it]) },
+                                    modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                             }
 
@@ -776,14 +778,18 @@ fun ThoseDaysScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    TabRow(
-                        tabs = listOf("公历", "农历"),
-                        selectedTabIndex = if (isLunarMode) 1 else 0,
-                        onTabSelected = { index ->
-                            if (index == 1 && !isLunarMode) {
+                    val tabs = listOf("公历", "农历")
+                    var selectedTabIndex by remember(isLunarMode) { mutableStateOf(if (isLunarMode) 1 else 0) }
+
+                    TabRowWithContour(
+                        tabs = tabs,
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = {
+                            selectedTabIndex = it
+                            if (it == 1 && !isLunarMode) {
                                 syncLunarFromSolar()
                             }
-                            isLunarMode = index == 1
+                            isLunarMode = it == 1
                             syncDateLabel()
                         },
                         modifier = Modifier.fillMaxWidth(),
