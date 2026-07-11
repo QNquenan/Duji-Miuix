@@ -745,7 +745,11 @@ fun MyItemsScreen(
                                             .size(48.dp)
                                             .clip(RoundedCornerShape(12.dp))
                                             .background(
-                                                color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
+                                                color = if (isSelected) {
+                                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                                } else {
+                                                    MiuixTheme.colorScheme.secondaryContainer
+                                                },
                                                 shape = RoundedCornerShape(12.dp)
                                             )
                                             .clickable { tempSelectedIcon = icon },

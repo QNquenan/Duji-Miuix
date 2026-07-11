@@ -142,6 +142,7 @@ fun ThoseDaysScreen(
     var showBottomSheet by remember { mutableStateOf(false) }
     var showDateDialog by remember { mutableStateOf(false) }
     var showEmojiDialog by remember { mutableStateOf(false) }
+    var showCustomEmojiDialog by remember { mutableStateOf(false) }
     var showWeekDaysDialog by remember { mutableStateOf(false) }
     var showMonthDaysDialog by remember { mutableStateOf(false) }
     var dayName by remember { mutableStateOf("") }
@@ -151,6 +152,7 @@ fun ThoseDaysScreen(
     var dayNote by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
     var selectedEmoji by remember { mutableStateOf<String?>(null) }
+    var customEmojiText by remember { mutableStateOf("") }
     var selectedWeekDays by remember { mutableStateOf(setOf<Int>()) }
     var selectedMonthDays by remember { mutableStateOf(setOf<Int>()) }
     var hasPickedDate by remember { mutableStateOf(false) }
@@ -175,6 +177,7 @@ fun ThoseDaysScreen(
         dayNote = ""
         isPinned = false
         selectedEmoji = null
+        customEmojiText = ""
         selectedWeekDays = emptySet()
         selectedMonthDays = emptySet()
         hasPickedDate = false
@@ -334,6 +337,7 @@ fun ThoseDaysScreen(
                     IconButton(onClick = {
                         showDateDialog = false
                         showEmojiDialog = false
+                        showCustomEmojiDialog = false
                         showWeekDaysDialog = false
                         showMonthDaysDialog = false
                         dismiss?.invoke()
@@ -369,6 +373,7 @@ fun ThoseDaysScreen(
                 onDismissRequest = {
                     showDateDialog = false
                     showEmojiDialog = false
+                    showCustomEmojiDialog = false
                     showWeekDaysDialog = false
                     showMonthDaysDialog = false
                     showBottomSheet = false
@@ -601,8 +606,8 @@ fun ThoseDaysScreen(
                         TextButton(
                             text = "自定义",
                             onClick = {
-                                selectedEmoji = tempSelectedEmoji
                                 showEmojiDialog = false
+                                showCustomEmojiDialog = true
                             },
                             modifier = Modifier.weight(1f),
                         )
@@ -611,6 +616,49 @@ fun ThoseDaysScreen(
                             onClick = {
                                 selectedEmoji = tempSelectedEmoji
                                 showEmojiDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
+                }
+            }
+
+            WindowDialog(
+                title = "自定义表情",
+                show = showCustomEmojiDialog,
+                onDismissRequest = { showCustomEmojiDialog = false },
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    TextField(
+                        value = customEmojiText,
+                        onValueChange = { customEmojiText = it },
+                        label = "输入表情或文字",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(
+                            text = "取消",
+                            onClick = { showCustomEmojiDialog = false },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "确定",
+                            onClick = {
+                                selectedEmoji = customEmojiText
+                                customEmojiText = ""
+                                showCustomEmojiDialog = false
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.textButtonColorsPrimary(),
