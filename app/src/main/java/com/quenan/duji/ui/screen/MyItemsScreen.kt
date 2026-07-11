@@ -615,20 +615,20 @@ fun MyItemsScreen(
                     SmallTitle(text = "信息",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(16.dp),
+                        insideMargin = PaddingValues(0.dp),
                         colors = CardDefaults.defaultColors(
                             color = MiuixTheme.colorScheme.surfaceContainer,
                         ),
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             TextField(
                                 value = itemName,
                                 onValueChange = { itemName = it },
                                 label = "名称",
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                                 maxLines = 1,
                             )
 
@@ -640,14 +640,14 @@ fun MyItemsScreen(
                                     }
                                 },
                                 label = "价格",
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                                 maxLines = 1,
                                 keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                             )
 
                             Surface(
                                 onClick = { showDateDialog = true },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                                 shape = RoundedCornerShape(16.dp),
                                 color = MiuixTheme.colorScheme.secondaryContainer,
                             ) {
@@ -684,14 +684,14 @@ fun MyItemsScreen(
                                 singleLine = false,
                                 minLines = 3,
                                 maxLines = 5,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                             )
                         }
                     }
 
                     SmallTitle(text = "功能",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp),
                         colors = CardDefaults.defaultColors(
                             color = MiuixTheme.colorScheme.surfaceContainer,
                         ),
@@ -699,7 +699,7 @@ fun MyItemsScreen(
                         SwitchPreference(
                             title = "置顶",
                             checked = isPinned,
-                            onCheckedChange = { isPinned = it },
+                            onCheckedChange = { isPinned = it }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         )
                     }
 
