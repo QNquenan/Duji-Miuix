@@ -37,12 +37,7 @@ fun DayListItem(
     onClick: () -> Unit,
 ) {
     val status = day.computeStatus()
-    val daysColor = when {
-        status.statusText == "就是今天！" -> Color(0xFFFF9800)
-        status.diff > 0 && status.diff <= 7 -> Color(0xFFFF9800)
-        status.diff < 0 && day.repeatCycle.name == "NONE" -> MiuixTheme.colorScheme.onBackgroundVariant
-        else -> MiuixTheme.colorScheme.primary
-    }
+    val pinColor = Color(0xFFFF9500)
 
     Card(
         modifier = Modifier
@@ -70,23 +65,24 @@ fun DayListItem(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (day.isPinned) {
-                        Icon(
-                            imageVector = MiuixIcons.Pin,
-                            contentDescription = "置顶",
-                            tint = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(modifier = Modifier.padding(start = 4.dp))
-                    }
                     Text(
                         text = day.name,
+                        modifier = Modifier.weight(1f, fill = false),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MiuixTheme.colorScheme.onBackground,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (day.isPinned) {
+                        Spacer(modifier = Modifier.padding(start = 4.dp))
+                        Icon(
+                            imageVector = MiuixIcons.Pin,
+                            contentDescription = "置顶",
+                            tint = pinColor,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
                 }
                 Text(
                     text = status.dateText,
@@ -101,7 +97,7 @@ fun DayListItem(
                 text = status.statusText,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = daysColor,
+                color = MiuixTheme.colorScheme.onBackground,
             )
         }
     }
@@ -113,12 +109,7 @@ fun DayGridItem(
     onClick: () -> Unit,
 ) {
     val status = day.computeStatus()
-    val daysColor = when {
-        status.statusText == "就是今天！" -> Color(0xFFFF9800)
-        status.diff > 0 && status.diff <= 7 -> Color(0xFFFF9800)
-        status.diff < 0 && day.repeatCycle.name == "NONE" -> MiuixTheme.colorScheme.onBackgroundVariant
-        else -> MiuixTheme.colorScheme.primary
-    }
+    val pinColor = Color(0xFFFF9500)
 
     Card(
         modifier = Modifier
@@ -128,35 +119,36 @@ fun DayGridItem(
         colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MiuixTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = day.emoji, fontSize = 26.sp)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MiuixTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = day.emoji, fontSize = 26.sp)
-                }
+                Text(
+                    text = day.name,
+                    modifier = Modifier.weight(1f, fill = false),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 if (day.isPinned) {
-                    Spacer(modifier = Modifier.padding(start = 6.dp))
+                    Spacer(modifier = Modifier.padding(start = 4.dp))
                     Icon(
                         imageVector = MiuixIcons.Pin,
                         contentDescription = "置顶",
-                        tint = MiuixTheme.colorScheme.primary,
+                        tint = pinColor,
                         modifier = Modifier.size(16.dp),
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = day.name,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MiuixTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = status.dateText,
@@ -170,7 +162,7 @@ fun DayGridItem(
                 text = status.statusText,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = daysColor,
+                color = MiuixTheme.colorScheme.onBackground,
             )
         }
     }

@@ -59,10 +59,18 @@ fun SystemNoticeHost(
 ) {
     val message = hostState.currentMessage
     var renderedMessage by remember { mutableStateOf<String?>(null) }
+    var visible by remember { mutableStateOf(false) }
 
     LaunchedEffect(message) {
         if (message != null) {
             renderedMessage = message
+            visible = true
+        } else if (renderedMessage != null) {
+            visible = false
+            delay(220)
+            if (hostState.currentMessage == null) {
+                renderedMessage = null
+            }
         }
     }
 
@@ -71,7 +79,7 @@ fun SystemNoticeHost(
         contentAlignment = Alignment.TopCenter,
     ) {
         AnimatedVisibility(
-            visible = message != null,
+            visible = visible && renderedMessage != null,
             enter = fadeIn() + slideInVertically { -it / 2 },
             exit = fadeOut() + slideOutVertically { -it / 2 },
             modifier = Modifier
@@ -95,14 +103,6 @@ fun SystemNoticeHost(
         }
     }
 
-    LaunchedEffect(message, renderedMessage) {
-        if (message == null && renderedMessage != null) {
-            delay(220)
-            if (hostState.currentMessage == null) {
-                renderedMessage = null
-            }
-        }
-    }
 }
 
 @Composable

@@ -543,30 +543,36 @@ fun MyItemsScreen(
                 endAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
-                        if (itemName.isNotBlank() && itemPrice.isNotBlank() && itemDate.isNotBlank()) {
-                            if (editingItem == null) {
-                                viewModel.addItem(
-                                    icon = selectedIcon,
-                                    name = itemName,
-                                    date = itemDate,
-                                    price = itemPrice,
-                                    note = itemNote,
-                                    isPinned = isPinned,
-                                )
-                            } else {
-                                viewModel.updateItem(
-                                    id = editingItem!!.id,
-                                    icon = selectedIcon,
-                                    name = itemName,
-                                    date = itemDate,
-                                    price = itemPrice,
-                                    note = itemNote,
-                                    isPinned = isPinned,
-                                )
+                        when {
+                            itemName.isBlank() -> showNotice("名称不能为空")
+                            itemPrice.isBlank() -> showNotice("价格不能为空")
+                            itemDate.isBlank() -> showNotice("日期不能为空")
+                            else -> {
+                                if (editingItem == null) {
+                                    viewModel.addItem(
+                                        icon = selectedIcon,
+                                        name = itemName,
+                                        date = itemDate,
+                                        price = itemPrice,
+                                        note = itemNote,
+                                        isPinned = isPinned,
+                                    )
+                                    showNotice("添加成功")
+                                } else {
+                                    viewModel.updateItem(
+                                        id = editingItem!!.id,
+                                        icon = selectedIcon,
+                                        name = itemName,
+                                        date = itemDate,
+                                        price = itemPrice,
+                                        note = itemNote,
+                                        isPinned = isPinned,
+                                    )
+                                    showNotice("修改成功")
+                                }
+                                editingItem = null
+                                dismiss?.invoke()
                             }
-                            showNotice(if (editingItem == null) "添加成功😋" else "修改成功😋")
-                            editingItem = null
-                            dismiss?.invoke()
                         }
                     }) {
                         Icon(
@@ -1116,44 +1122,42 @@ private fun ItemGridCard(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        color = MiuixTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(
-                            color = MiuixTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(12.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = icon,
-                        fontSize = 22.sp,
-                    )
-                }
-                if (isPinned) {
-                    Icon(
-                        imageVector = MiuixIcons.Pin,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFFFF9500)
-                    )
-                }
+                Text(
+                    text = icon,
+                    fontSize = 22.sp,
+                )
             }
             Column(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text(
-                    text = name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = name,
+                        modifier = Modifier.weight(1f, fill = false),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                    )
+                    if (isPinned) {
+                        Spacer(modifier = Modifier.padding(start = 4.dp))
+                        Icon(
+                            imageVector = MiuixIcons.Pin,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = Color(0xFFFF9500)
+                        )
+                    }
+                }
                 Text(
                     text = date,
                     fontSize = 12.sp,

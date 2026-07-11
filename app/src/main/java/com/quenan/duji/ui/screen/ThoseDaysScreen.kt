@@ -54,6 +54,7 @@ import com.quenan.duji.data.day.parseDayDate
 import com.quenan.duji.data.day.repeatLabel
 import com.quenan.duji.data.day.targetDateFormatted
 import com.quenan.duji.data.day.typeLabel
+import com.quenan.duji.ui.component.rememberNoticeAction
 import com.quenan.duji.ui.util.LunarDate
 import com.quenan.duji.ui.util.lunarMonthDayCount
 import com.quenan.duji.ui.util.lunarMonthList
@@ -63,6 +64,8 @@ import java.time.LocalDate
 import java.util.Calendar
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -87,6 +90,8 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.extended.Sort
+import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.LocalDismissState
@@ -129,6 +134,8 @@ fun ThoseDaysScreen(
     val viewModel: ThoseDaysViewModel = viewModel()
     val days by viewModel.days.collectAsStateWithLifecycle()
     val currentViewMode by viewModel.currentViewMode.collectAsStateWithLifecycle()
+    val currentSort by viewModel.currentSort.collectAsStateWithLifecycle()
+    val showNotice = rememberNoticeAction()
     val emojiOptions = remember {
         listOf(
             EmojiOption("爱心", "❤️"), EmojiOption("双心", "💕"), EmojiOption("戒指", "💍"),
@@ -303,6 +310,64 @@ fun ThoseDaysScreen(
         return null
     }
 
+    val sortEntries = remember(currentSort) {
+        listOf(
+            DropdownEntry(
+                items = listOf(
+                    DropdownItem(
+                        text = "创建时间",
+                        selected = currentSort.field == DaySortField.CREATED_AT,
+                        onClick = {
+                            viewModel.updateSort(
+                                DaySortField.CREATED_AT,
+                                currentSort.direction,
+                            )
+                        },
+                    ),
+                    DropdownItem(
+                        text = "事件日期",
+                        selected = currentSort.field == DaySortField.EVENT_DATE,
+                        onClick = {
+                            viewModel.updateSort(
+                                DaySortField.EVENT_DATE,
+                                currentSort.direction,
+                            )
+                        },
+                    ),
+                )
+            ),
+            DropdownEntry(
+                items = listOf(
+                    DropdownItem(
+                        text = buildDaySortDirectionMenuTitle(currentSort.direction),
+                        children = listOf(
+                            DropdownItem(
+                                text = sortDirectionLabel(SortDirection.ASC),
+                                selected = currentSort.direction == SortDirection.ASC,
+                                onClick = {
+                                    viewModel.updateSort(
+                                        currentSort.field,
+                                        SortDirection.ASC,
+                                    )
+                                },
+                            ),
+                            DropdownItem(
+                                text = sortDirectionLabel(SortDirection.DESC),
+                                selected = currentSort.direction == SortDirection.DESC,
+                                onClick = {
+                                    viewModel.updateSort(
+                                        currentSort.field,
+                                        SortDirection.DESC,
+                                    )
+                                },
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -317,6 +382,13 @@ fun ThoseDaysScreen(
                         Icon(
                             imageVector = if (currentViewMode == ThoseDaysViewMode.Grid) MiuixIcons.All else MiuixIcons.ListView,
                             contentDescription = "切换视图",
+                            tint = MiuixTheme.colorScheme.onBackground,
+                        )
+                    }
+                    OverlayIconCascadingDropdownMenu(entries = sortEntries) {
+                        Icon(
+                            imageVector = MiuixIcons.Sort,
+                            contentDescription = "排序",
                             tint = MiuixTheme.colorScheme.onBackground,
                         )
                     }
@@ -498,7 +570,10 @@ fun ThoseDaysScreen(
                             TextButton(
                                 text = "删除",
                                 onClick = {
-                                    selectedDayItem?.let { day -> viewModel.deleteDay(day) }
+                                    selectedDayItem?.let { day ->
+                                        viewModel.deleteDay(day)
+                                        showNotice("删除成功")
+                                    }
                                     showDeleteConfirmDialog = false
                                     showDetailBottomSheet = false
                                     selectedDayItem = null
@@ -534,10 +609,10 @@ fun ThoseDaysScreen(
                     IconButton(onClick = {
                         val shouldPickDate = repeatCycle != "每周" && repeatCycle != "每月"
                         when {
-                            dayName.isBlank() -> return@IconButton
-                            repeatCycle == "每周" && selectedWeekDays.isEmpty() -> return@IconButton
-                            repeatCycle == "每月" && selectedMonthDays.isEmpty() -> return@IconButton
-                            shouldPickDate && !hasPickedDate -> return@IconButton
+                            dayName.isBlank() -> showNotice("日子名称不能为空")
+                            repeatCycle == "每周" && selectedWeekDays.isEmpty() -> showNotice("每周日期不能为空")
+                            repeatCycle == "每月" && selectedMonthDays.isEmpty() -> showNotice("每月日期不能为空")
+                            shouldPickDate && !hasPickedDate -> showNotice("日期不能为空")
                             else -> {
                                 val type = when (dayType) {
                                     "纪念日" -> DayType.ANNIVERSARY
@@ -568,19 +643,25 @@ fun ThoseDaysScreen(
                                     isPinned = isPinned,
                                     createdAt = editingDay?.createdAt ?: 0L,
                                 )
-                                if (editingDay == null) viewModel.addDay(
-                                    emoji = day.emoji,
-                                    emojiName = day.emojiName,
-                                    name = day.name,
-                                    type = day.type,
-                                    repeatCycle = day.repeatCycle,
-                                    targetDate = day.targetDate,
-                                    note = day.note,
-                                    weekDays = day.weekDays,
-                                    monthDays = day.monthDays,
-                                    isLunar = day.isLunar,
-                                    isPinned = day.isPinned,
-                                ) else viewModel.updateDay(day)
+                                if (editingDay == null) {
+                                    viewModel.addDay(
+                                        emoji = day.emoji,
+                                        emojiName = day.emojiName,
+                                        name = day.name,
+                                        type = day.type,
+                                        repeatCycle = day.repeatCycle,
+                                        targetDate = day.targetDate,
+                                        note = day.note,
+                                        weekDays = day.weekDays,
+                                        monthDays = day.monthDays,
+                                        isLunar = day.isLunar,
+                                        isPinned = day.isPinned,
+                                    )
+                                    showNotice("添加成功")
+                                } else {
+                                    viewModel.updateDay(day)
+                                    showNotice("修改成功")
+                                }
                                 editingDay = null
                                 dismiss?.invoke()
                             }
@@ -952,6 +1033,17 @@ private fun DetailRow(label: String, value: String) {
         Text(text = label, fontSize = 14.sp, color = MiuixTheme.colorScheme.onBackgroundVariant)
         Spacer(modifier = Modifier.weight(1f))
         Text(text = value, fontSize = 15.sp, color = MiuixTheme.colorScheme.onBackground)
+    }
+}
+
+private fun buildDaySortDirectionMenuTitle(direction: SortDirection): String {
+    return "正倒序（${sortDirectionLabel(direction)}）"
+}
+
+private fun sortDirectionLabel(direction: SortDirection): String {
+    return when (direction) {
+        SortDirection.ASC -> "升序"
+        SortDirection.DESC -> "倒序"
     }
 }
 
