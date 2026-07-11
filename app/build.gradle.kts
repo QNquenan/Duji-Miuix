@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.datastore.preferences)
+    implementation(libs.lunar)
     debugImplementation(libs.compose.ui.tooling)
 
     // Miuix —— 全量导入

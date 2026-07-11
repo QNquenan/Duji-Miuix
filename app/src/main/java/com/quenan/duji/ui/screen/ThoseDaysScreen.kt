@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -18,6 +19,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -35,9 +39,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.quenan.duji.ui.util.LunarDate
+import com.quenan.duji.ui.util.lunarMonthDayCount
+import com.quenan.duji.ui.util.lunarMonthList
+import com.quenan.duji.ui.util.lunarToSolar
+import com.quenan.duji.ui.util.solarToLunar
+import java.time.LocalDate
 import java.util.Calendar
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -55,6 +66,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -150,6 +162,10 @@ fun ThoseDaysScreen(
     var selectedYear by remember { mutableIntStateOf(currentYear) }
     var selectedMonth by remember { mutableIntStateOf(currentMonth) }
     var selectedDay by remember { mutableIntStateOf(currentDay) }
+    var isLunarMode by remember { mutableStateOf(false) }
+    var lunarYear by remember { mutableIntStateOf(currentYear.coerceIn(1901, 2100)) }
+    var lunarMonth by remember { mutableIntStateOf(currentMonth) }
+    var lunarDay by remember { mutableIntStateOf(currentDay.coerceAtMost(30)) }
 
     fun resetAddForm() {
         dayName = ""
@@ -162,13 +178,21 @@ fun ThoseDaysScreen(
         selectedWeekDays = emptySet()
         selectedMonthDays = emptySet()
         hasPickedDate = false
+        isLunarMode = false
         selectedYear = currentYear
         selectedMonth = currentMonth
         selectedDay = currentDay
+        lunarYear = currentYear.coerceIn(1901, 2100)
+        lunarMonth = currentMonth
+        lunarDay = currentDay.coerceAtMost(30)
     }
 
     fun syncDateLabel() {
         selectedDate = when {
+            dayType == "生日" && isLunarMode -> {
+                val lunar = LunarDate(lunarYear, lunarMonth, lunarDay)
+                "每年 农历${lunar.formatted}"
+            }
             dayType == "生日" -> "每年 ${selectedMonth.toString().padStart(2, '0')}月${selectedDay.toString().padStart(2, '0')}日"
             repeatCycle == "每周" -> {
                 if (selectedWeekDays.isEmpty()) {
@@ -186,9 +210,28 @@ fun ThoseDaysScreen(
                     "每月 $labels"
                 }
             }
+            isLunarMode && hasPickedDate -> {
+                val lunar = LunarDate(lunarYear, lunarMonth, lunarDay)
+                "农历 ${lunarYear}年${lunar.formatted}"
+            }
             hasPickedDate -> "$selectedYear-${selectedMonth.toString().padStart(2, '0')}-${selectedDay.toString().padStart(2, '0')}"
             else -> ""
         }
+    }
+
+    fun syncLunarFromSolar() {
+        val lunar = solarToLunar(selectedYear, selectedMonth, selectedDay) ?: return
+        lunarYear = lunar.year
+        lunarMonth = lunar.month
+        lunarDay = lunar.day
+    }
+
+    fun syncSolarFromLunar(): Boolean {
+        val solar = lunarToSolar(lunarYear, lunarMonth, lunarDay) ?: return false
+        selectedYear = solar.year
+        selectedMonth = solar.monthValue
+        selectedDay = solar.dayOfMonth
+        return true
     }
 
     fun applyTypeChange(newType: String) {
@@ -208,6 +251,14 @@ fun ThoseDaysScreen(
             selectedMonthDays = emptySet()
         }
         syncDateLabel()
+    }
+
+    fun safeLunarToSolar(year: Int, month: Int, day: Int): LocalDate? {
+        lunarToSolar(year, month, day)?.let { return it }
+        for (candidateDay in day - 1 downTo 1) {
+            lunarToSolar(year, month, candidateDay)?.let { return it }
+        }
+        return null
     }
 
     Scaffold(
@@ -645,17 +696,23 @@ fun ThoseDaysScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(7),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
+                        userScrollEnabled = false,
                     ) {
-                        (1..31).forEach { day ->
+                        items(31, span = { GridItemSpan(1) }) { index ->
+                            val day = index + 1
                             val isSelected = tempMonthDays.contains(day)
                             Surface(
                                 onClick = {
                                     tempMonthDays = if (isSelected) tempMonthDays - day else tempMonthDays + day
                                 },
+                                modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 color = if (isSelected) {
                                     MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)
@@ -663,16 +720,23 @@ fun ThoseDaysScreen(
                                     MiuixTheme.colorScheme.secondaryContainer
                                 },
                             ) {
-                                Text(
-                                    text = day.toString(),
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                    color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSecondaryContainer,
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(40.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = day.toString(),
+                                        color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSecondaryContainer,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.padding(bottom = 16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -702,74 +766,185 @@ fun ThoseDaysScreen(
                 show = showDateDialog,
                 onDismissRequest = { showDateDialog = false },
             ) {
+                val currentLunarMonths = lunarMonthList(lunarYear)
+                val normalizedLunarMonth = currentLunarMonths.firstOrNull { it.first == lunarMonth }?.first
+                    ?: currentLunarMonths.firstOrNull()?.first
+                    ?: 1
+                val lunarDayCount = lunarMonthDayCount(lunarYear, normalizedLunarMonth).coerceAtLeast(1)
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Row(
+                    TabRow(
+                        tabs = listOf("公历", "农历"),
+                        selectedTabIndex = if (isLunarMode) 1 else 0,
+                        onTabSelected = { index ->
+                            if (index == 1 && !isLunarMode) {
+                                syncLunarFromSolar()
+                            }
+                            isLunarMode = index == 1
+                            syncDateLabel()
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "年",
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                            )
-                            NumberPicker(
-                                value = selectedYear,
-                                onValueChange = { selectedYear = it },
-                                range = 1900..2100,
-                                wrapAround = true,
-                                modifier = Modifier.width(100.dp),
-                                label = { it.toString() },
-                                colors = NumberPickerDefaults.colors(
-                                    selectedTextColor = MiuixTheme.colorScheme.primary,
-                                ),
-                            )
-                        }
+                    )
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "月",
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                            )
-                            NumberPicker(
-                                value = selectedMonth,
-                                onValueChange = { selectedMonth = it },
-                                range = 1..12,
-                                wrapAround = true,
-                                modifier = Modifier.width(80.dp),
-                                label = { it.toString().padStart(2, '0') },
-                                colors = NumberPickerDefaults.colors(
-                                    selectedTextColor = MiuixTheme.colorScheme.primary,
-                                ),
-                            )
-                        }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "日",
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                            )
-                            NumberPicker(
-                                value = selectedDay,
-                                onValueChange = { selectedDay = it },
-                                range = 1..31,
-                                wrapAround = true,
-                                modifier = Modifier.width(80.dp),
-                                label = { it.toString().padStart(2, '0') },
-                                colors = NumberPickerDefaults.colors(
-                                    selectedTextColor = MiuixTheme.colorScheme.primary,
-                                ),
-                            )
+                    if (!isLunarMode) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "年",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                )
+                                NumberPicker(
+                                    value = selectedYear,
+                                    onValueChange = {
+                                        selectedYear = it
+                                        if (selectedDay > LocalDate.of(selectedYear, selectedMonth, 1).lengthOfMonth()) {
+                                            selectedDay = LocalDate.of(selectedYear, selectedMonth, 1).lengthOfMonth()
+                                        }
+                                        syncLunarFromSolar()
+                                    },
+                                    range = 1900..2100,
+                                    wrapAround = true,
+                                    modifier = Modifier.width(100.dp),
+                                    label = { it.toString() },
+                                    colors = NumberPickerDefaults.colors(
+                                        selectedTextColor = MiuixTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "月",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                )
+                                NumberPicker(
+                                    value = selectedMonth,
+                                    onValueChange = {
+                                        selectedMonth = it
+                                        if (selectedDay > LocalDate.of(selectedYear, selectedMonth, 1).lengthOfMonth()) {
+                                            selectedDay = LocalDate.of(selectedYear, selectedMonth, 1).lengthOfMonth()
+                                        }
+                                        syncLunarFromSolar()
+                                    },
+                                    range = 1..12,
+                                    wrapAround = true,
+                                    modifier = Modifier.width(80.dp),
+                                    label = { it.toString().padStart(2, '0') },
+                                    colors = NumberPickerDefaults.colors(
+                                        selectedTextColor = MiuixTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "日",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                )
+                                NumberPicker(
+                                    value = selectedDay,
+                                    onValueChange = {
+                                        selectedDay = it
+                                        syncLunarFromSolar()
+                                    },
+                                    range = 1..LocalDate.of(selectedYear, selectedMonth, 1).lengthOfMonth(),
+                                    wrapAround = true,
+                                    modifier = Modifier.width(80.dp),
+                                    label = { it.toString().padStart(2, '0') },
+                                    colors = NumberPickerDefaults.colors(
+                                        selectedTextColor = MiuixTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "年",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                )
+                                NumberPicker(
+                                    value = lunarYear,
+                                    onValueChange = {
+                                        lunarYear = it.coerceIn(1901, 2100)
+                                        val months = lunarMonthList(lunarYear)
+                                        lunarMonth = months.firstOrNull { month -> month.first == lunarMonth }?.first
+                                            ?: months.firstOrNull()?.first
+                                            ?: 1
+                                        lunarDay = lunarDay.coerceAtMost(lunarMonthDayCount(lunarYear, lunarMonth).coerceAtLeast(1))
+                                    },
+                                    range = 1901..2100,
+                                    wrapAround = true,
+                                    modifier = Modifier.width(100.dp),
+                                    label = { it.toString() },
+                                    colors = NumberPickerDefaults.colors(
+                                        selectedTextColor = MiuixTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "月",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                )
+                                NumberPicker(
+                                    value = currentLunarMonths.indexOfFirst { it.first == normalizedLunarMonth }.coerceAtLeast(0),
+                                    onValueChange = { pickerIndex ->
+                                        lunarMonth = currentLunarMonths.getOrNull(pickerIndex)?.first ?: currentLunarMonths.firstOrNull()?.first ?: 1
+                                        lunarDay = lunarDay.coerceAtMost(lunarMonthDayCount(lunarYear, lunarMonth).coerceAtLeast(1))
+                                    },
+                                    range = 0 until currentLunarMonths.size,
+                                    wrapAround = true,
+                                    modifier = Modifier.width(90.dp),
+                                    label = { index -> currentLunarMonths[index].second },
+                                    colors = NumberPickerDefaults.colors(
+                                        selectedTextColor = MiuixTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "日",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                )
+                                NumberPicker(
+                                    value = lunarDay,
+                                    onValueChange = { lunarDay = it },
+                                    range = 1..lunarDayCount,
+                                    wrapAround = true,
+                                    modifier = Modifier.width(90.dp),
+                                    label = { dayValue -> LunarDate(0, 1, dayValue).dayName },
+                                    colors = NumberPickerDefaults.colors(
+                                        selectedTextColor = MiuixTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.padding(bottom = 16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -783,6 +958,14 @@ fun ThoseDaysScreen(
                         TextButton(
                             text = "确定",
                             onClick = {
+                                if (isLunarMode) {
+                                    val solar = safeLunarToSolar(lunarYear, lunarMonth, lunarDay) ?: return@TextButton
+                                    selectedYear = solar.year
+                                    selectedMonth = solar.monthValue
+                                    selectedDay = solar.dayOfMonth
+                                } else {
+                                    syncLunarFromSolar()
+                                }
                                 hasPickedDate = true
                                 syncDateLabel()
                                 showDateDialog = false
