@@ -542,50 +542,46 @@ fun ThoseDaysScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(6),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(208.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
+                        userScrollEnabled = false,
                     ) {
-                        emojiOptions.chunked(6).forEach { rowOptions ->
-                            Row(
+                        items(emojiOptions.size, span = { GridItemSpan(1) }) { index ->
+                            val option = emojiOptions[index]
+                            val isSelected = tempSelectedEmoji == option.emoji
+                            Surface(
+                                onClick = { tempSelectedEmoji = option.emoji },
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.Top,
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) {
+                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                } else {
+                                    MiuixTheme.colorScheme.secondaryContainer
+                                },
                             ) {
-                                rowOptions.forEach { option ->
-                                    val isSelected = tempSelectedEmoji == option.emoji
-                                    Column(
-                                        modifier = Modifier.width(44.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(44.dp)
-                                                .background(
-                                                    color = if (isSelected) {
-                                                        MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)
-                                                    } else {
-                                                        Color.Transparent
-                                                    },
-                                                    shape = RoundedCornerShape(12.dp),
-                                                )
-                                                .clickable { tempSelectedEmoji = option.emoji },
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Text(
-                                                text = option.emoji,
-                                                fontSize = 24.sp,
-                                            )
-                                        }
-                                        Text(
-                                            text = option.name,
-                                            fontSize = 10.sp,
-                                            color = MiuixTheme.colorScheme.onBackgroundVariant,
-                                            textAlign = TextAlign.Center,
-                                            maxLines = 1,
-                                        )
-                                    }
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Text(
+                                        text = option.emoji,
+                                        fontSize = 24.sp,
+                                    )
+                                    Text(
+                                        text = option.name,
+                                        fontSize = 10.sp,
+                                        color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackgroundVariant,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                    )
                                 }
                             }
                         }
@@ -598,16 +594,16 @@ fun ThoseDaysScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         TextButton(
-                            text = "默认",
-                            onClick = {
-                                selectedEmoji = null
-                                showEmojiDialog = false
-                            },
+                            text = "取消",
+                            onClick = { showEmojiDialog = false },
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(
-                            text = "取消",
-                            onClick = { showEmojiDialog = false },
+                            text = "自定义",
+                            onClick = {
+                                selectedEmoji = tempSelectedEmoji
+                                showEmojiDialog = false
+                            },
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(
