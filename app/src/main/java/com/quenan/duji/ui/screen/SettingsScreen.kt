@@ -1,5 +1,6 @@
 package com.quenan.duji.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,12 +18,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.quenan.duji.ui.component.rememberNoticeAction
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -48,10 +54,26 @@ fun SettingsScreen() {
     var predictiveBackEnabled by remember { mutableStateOf(true) }
     var currentPage by remember { mutableStateOf(SettingsSubPage.Main) }
 
+    BackHandler(enabled = currentPage == SettingsSubPage.ReleaseNotes) {
+        currentPage = SettingsSubPage.Main
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = if (currentPage == SettingsSubPage.Main) "设置" else "更新日志",
+                navigationIcon = {
+                    if (currentPage == SettingsSubPage.ReleaseNotes) {
+                        IconButton(
+                            onClick = { currentPage = SettingsSubPage.Main },
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回",
+                            )
+                        }
+                    }
+                },
                 scrollBehavior = scrollBehavior,
             )
         }
@@ -81,15 +103,16 @@ fun SettingsScreen() {
                         Text(text = versionName, color = MiuixTheme.colorScheme.onBackground)
                         HorizontalDivider()
                         Text(
-                            text = "更新日志页面已预留，后续可在这里补充每个版本的新增内容、修复项和兼容性说明。",
+                            text = "这里将展示完整的版本更新记录。",
                             color = MiuixTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = "当前为占位页面，后续会补充每个版本的新增内容、修复项和兼容性说明。",
+                            color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            textAlign = TextAlign.Start,
                         )
                     }
                 }
-                BasicComponent(
-                    title = "返回设置",
-                    onClick = { currentPage = SettingsSubPage.Main },
-                )
             }
         } else {
             Column(
