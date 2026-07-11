@@ -42,6 +42,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,10 +72,12 @@ import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -183,6 +186,20 @@ fun ThoseDaysScreen(
     var lunarYear by remember { mutableIntStateOf(currentYear.coerceIn(1901, 2100)) }
     var lunarMonth by remember { mutableIntStateOf(currentMonth) }
     var lunarDay by remember { mutableIntStateOf(currentDay.coerceAtMost(30)) }
+    var searchQuery by remember { mutableStateOf("") }
+    var searchExpanded by remember { mutableStateOf(false) }
+    val filteredDays = remember(days, searchQuery) {
+        val keyword = searchQuery.trim()
+        if (keyword.isEmpty()) {
+            days
+        } else {
+            days.filter { day ->
+                day.name.contains(keyword, ignoreCase = true) ||
+                    day.note.contains(keyword, ignoreCase = true) ||
+                    day.emoji.contains(keyword)
+            }
+        }
+    }
 
     fun resetAddForm() {
         editingDay = null
@@ -370,34 +387,55 @@ fun ThoseDaysScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = "那些日子",
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(onClick = {
-                        viewModel.updateViewMode(
-                            if (currentViewMode == ThoseDaysViewMode.List) ThoseDaysViewMode.Grid else ThoseDaysViewMode.List
-                        )
-                    }) {
-                        Icon(
-                            imageVector = if (currentViewMode == ThoseDaysViewMode.Grid) MiuixIcons.All else MiuixIcons.ListView,
-                            contentDescription = "切换视图",
-                            tint = MiuixTheme.colorScheme.onBackground,
-                        )
+            Column {
+                TopAppBar(
+                    title = "那些日子",
+                    scrollBehavior = scrollBehavior,
+                    actions = {
+                        IconButton(onClick = {
+                            viewModel.updateViewMode(
+                                if (currentViewMode == ThoseDaysViewMode.List) ThoseDaysViewMode.Grid else ThoseDaysViewMode.List
+                            )
+                        }) {
+                            Icon(
+                                imageVector = if (currentViewMode == ThoseDaysViewMode.Grid) MiuixIcons.All else MiuixIcons.ListView,
+                                contentDescription = "切换视图",
+                                tint = MiuixTheme.colorScheme.onBackground,
+                            )
+                        }
+                        OverlayIconCascadingDropdownMenu(entries = sortEntries) {
+                            Icon(
+                                imageVector = MiuixIcons.Sort,
+                                contentDescription = "排序",
+                                tint = MiuixTheme.colorScheme.onBackground,
+                            )
+                        }
                     }
-                    OverlayIconCascadingDropdownMenu(entries = sortEntries) {
-                        Icon(
-                            imageVector = MiuixIcons.Sort,
-                            contentDescription = "排序",
-                            tint = MiuixTheme.colorScheme.onBackground,
+                )
+                SearchBar(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    insideMargin = DpSize(0.dp, 0.dp),
+                    inputField = {
+                        InputField(
+                            query = searchQuery,
+                            onQueryChange = {
+                                searchQuery = it
+                                searchExpanded = it.isNotBlank()
+                            },
+                            onSearch = { searchExpanded = false },
+                            expanded = searchExpanded,
+                            onExpandedChange = { searchExpanded = it },
+                            label = "搜索日子"
                         )
-                    }
-                }
-            )
+                    },
+                    expanded = searchExpanded,
+                    onExpandedChange = { searchExpanded = it }
+                ) {}
+            }
         },
     ) { innerPadding ->
         Box(modifier = modifier.fillMaxSize()) {
-            if (days.isEmpty()) {
+            if (filteredDays.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -424,7 +462,7 @@ fun ThoseDaysScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(days, key = { it.id }) { day ->
+                    items(filteredDays, key = { it.id }) { day ->
                         DayListItem(
                             day = day,
                             onClick = {
@@ -450,11 +488,11 @@ fun ThoseDaysScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(days.size, key = { days[it].id }) { index ->
+                    items(filteredDays.size, key = { filteredDays[it].id }) { index ->
                         DayGridItem(
-                            day = days[index],
+                            day = filteredDays[index],
                             onClick = {
-                                selectedDayItem = days[index]
+                                selectedDayItem = filteredDays[index]
                                 showDetailBottomSheet = true
                             }
                         )

@@ -63,6 +63,7 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -70,6 +71,7 @@ import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.NumberPickerColors
 import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
@@ -154,6 +156,20 @@ fun MyItemsScreen(
     var selectedMonth by remember { mutableIntStateOf(currentMonth) }
     var selectedDay by remember { mutableIntStateOf(currentDay) }
     var itemViewMode by remember { mutableStateOf(ItemViewMode.List) }
+    var searchQuery by remember { mutableStateOf("") }
+    var searchExpanded by remember { mutableStateOf(false) }
+    val filteredItems = remember(items, searchQuery) {
+        val keyword = searchQuery.trim()
+        if (keyword.isEmpty()) {
+            items
+        } else {
+            items.filter { item ->
+                item.name.contains(keyword, ignoreCase = true) ||
+                    item.note.contains(keyword, ignoreCase = true) ||
+                    item.icon.contains(keyword)
+            }
+        }
+    }
     fun populateForm(item: ItemData) {
         itemName = item.name
         itemPrice = item.price.toString()
@@ -243,32 +259,53 @@ fun MyItemsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = "我的物品",
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(onClick = {
-                        itemViewMode = if (itemViewMode == ItemViewMode.List) {
-                            ItemViewMode.Grid
-                        } else {
-                            ItemViewMode.List
+            Column {
+                TopAppBar(
+                    title = "我的物品",
+                    scrollBehavior = scrollBehavior,
+                    actions = {
+                        IconButton(onClick = {
+                            itemViewMode = if (itemViewMode == ItemViewMode.List) {
+                                ItemViewMode.Grid
+                            } else {
+                                ItemViewMode.List
+                            }
+                        }) {
+                            Icon(
+                                imageVector = if (itemViewMode == ItemViewMode.Grid) MiuixIcons.All else MiuixIcons.ListView,
+                                contentDescription = "切换视图",
+                                tint = MiuixTheme.colorScheme.onBackground,
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = if (itemViewMode == ItemViewMode.Grid) MiuixIcons.All else MiuixIcons.ListView,
-                            contentDescription = "切换视图",
-                            tint = MiuixTheme.colorScheme.onBackground,
-                        )
+                        OverlayIconCascadingDropdownMenu(entries = sortEntries) {
+                            Icon(
+                                imageVector = MiuixIcons.Sort,
+                                contentDescription = "排序",
+                                tint = MiuixTheme.colorScheme.onBackground,
+                            )
+                        }
                     }
-                    OverlayIconCascadingDropdownMenu(entries = sortEntries) {
-                        Icon(
-                            imageVector = MiuixIcons.Sort,
-                            contentDescription = "排序",
-                            tint = MiuixTheme.colorScheme.onBackground,
+                )
+                SearchBar(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    insideMargin = DpSize(0.dp, 0.dp),
+                    inputField = {
+                        InputField(
+                            query = searchQuery,
+                            onQueryChange = {
+                                searchQuery = it
+                                searchExpanded = it.isNotBlank()
+                            },
+                            onSearch = { searchExpanded = false },
+                            expanded = searchExpanded,
+                            onExpandedChange = { searchExpanded = it },
+                            label = "搜索物品"
                         )
-                    }
-                }
-            )
+                    },
+                    expanded = searchExpanded,
+                    onExpandedChange = { searchExpanded = it }
+                ) {}
+            }
         }
     ) { innerPadding ->
         Box(
@@ -291,7 +328,7 @@ fun MyItemsScreen(
                     item {
                         StatsCard(stats = stats)
                     }
-                    items(items, key = { it.id }) { item ->
+                    items(filteredItems, key = { it.id }) { item ->
                         ItemListCard(
                             icon = item.icon,
                             name = item.name,
@@ -325,8 +362,8 @@ fun MyItemsScreen(
                     item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                         StatsCard(stats = stats)
                     }
-                    items(items.size, key = { items[it].id }) { index ->
-                        val item = items[index]
+                    items(filteredItems.size, key = { filteredItems[it].id }) { index ->
+                        val item = filteredItems[index]
                         ItemGridCard(
                             icon = item.icon,
                             name = item.name,
