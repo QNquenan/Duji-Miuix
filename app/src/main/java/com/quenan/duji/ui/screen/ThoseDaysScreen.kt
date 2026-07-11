@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -129,6 +130,8 @@ fun ThoseDaysScreen(
     var showBottomSheet by remember { mutableStateOf(false) }
     var showDateDialog by remember { mutableStateOf(false) }
     var showEmojiDialog by remember { mutableStateOf(false) }
+    var showWeekDaysDialog by remember { mutableStateOf(false) }
+    var showMonthDaysDialog by remember { mutableStateOf(false) }
     var dayName by remember { mutableStateOf("") }
     var dayType by remember { mutableStateOf(typeOptions[0]) }
     var repeatCycle by remember { mutableStateOf(repeatOptions[0]) }
@@ -136,6 +139,9 @@ fun ThoseDaysScreen(
     var dayNote by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
     var selectedEmoji by remember { mutableStateOf<String?>(null) }
+    var selectedWeekDays by remember { mutableStateOf(setOf<Int>()) }
+    var selectedMonthDays by remember { mutableStateOf(setOf<Int>()) }
+    var hasPickedDate by remember { mutableStateOf(false) }
 
     val calendar = remember { Calendar.getInstance() }
     val currentYear = calendar.get(Calendar.YEAR)
@@ -153,9 +159,55 @@ fun ThoseDaysScreen(
         dayNote = ""
         isPinned = false
         selectedEmoji = null
+        selectedWeekDays = emptySet()
+        selectedMonthDays = emptySet()
+        hasPickedDate = false
         selectedYear = currentYear
         selectedMonth = currentMonth
         selectedDay = currentDay
+    }
+
+    fun syncDateLabel() {
+        selectedDate = when {
+            dayType == "生日" -> "每年 ${selectedMonth.toString().padStart(2, '0')}月${selectedDay.toString().padStart(2, '0')}日"
+            repeatCycle == "每周" -> {
+                if (selectedWeekDays.isEmpty()) {
+                    "请选择"
+                } else {
+                    val weekLabels = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+                    selectedWeekDays.sorted().joinToString(" ") { weekLabels[it] }
+                }
+            }
+            repeatCycle == "每月" -> {
+                if (selectedMonthDays.isEmpty()) {
+                    "请选择"
+                } else {
+                    val labels = selectedMonthDays.sorted().joinToString(" ") { "$it 日" }
+                    "每月 $labels"
+                }
+            }
+            hasPickedDate -> "$selectedYear-${selectedMonth.toString().padStart(2, '0')}-${selectedDay.toString().padStart(2, '0')}"
+            else -> ""
+        }
+    }
+
+    fun applyTypeChange(newType: String) {
+        dayType = newType
+        if (newType == "生日") {
+            repeatCycle = repeatOptions[3]
+        }
+        syncDateLabel()
+    }
+
+    fun applyRepeatCycleChange(newRepeatCycle: String) {
+        repeatCycle = newRepeatCycle
+        if (newRepeatCycle != "每周") {
+            selectedWeekDays = emptySet()
+        }
+        if (newRepeatCycle != "每月") {
+            selectedMonthDays = emptySet()
+        }
+        syncDateLabel()
     }
 
     Scaffold(
@@ -228,7 +280,13 @@ fun ThoseDaysScreen(
                 backgroundColor = MiuixTheme.colorScheme.surface,
                 startAction = {
                     val dismiss = LocalDismissState.current
-                    IconButton(onClick = { dismiss?.invoke() }) {
+                    IconButton(onClick = {
+                        showDateDialog = false
+                        showEmojiDialog = false
+                        showWeekDaysDialog = false
+                        showMonthDaysDialog = false
+                        dismiss?.invoke()
+                    }) {
                         Icon(
                             imageVector = MiuixIcons.Close,
                             contentDescription = "关闭",
@@ -238,7 +296,18 @@ fun ThoseDaysScreen(
                 },
                 endAction = {
                     val dismiss = LocalDismissState.current
-                    IconButton(onClick = { dismiss?.invoke() }) {
+                    IconButton(onClick = {
+                        val shouldPickDate = repeatCycle != "每周" && repeatCycle != "每月"
+                        val invalidDate = repeatCycle == "不重复" && dayType == "倒/正数日" && selectedYear < 1900
+                        when {
+                            dayName.isBlank() -> return@IconButton
+                            repeatCycle == "每周" && selectedWeekDays.isEmpty() -> return@IconButton
+                            repeatCycle == "每月" && selectedMonthDays.isEmpty() -> return@IconButton
+                            shouldPickDate && !hasPickedDate -> return@IconButton
+                            invalidDate -> return@IconButton
+                            else -> dismiss?.invoke()
+                        }
+                    }) {
                         Icon(
                             imageVector = MiuixIcons.Ok,
                             contentDescription = "确认",
@@ -249,6 +318,8 @@ fun ThoseDaysScreen(
                 onDismissRequest = {
                     showDateDialog = false
                     showEmojiDialog = false
+                    showWeekDaysDialog = false
+                    showMonthDaysDialog = false
                     showBottomSheet = false
                 },
             ) {
@@ -290,7 +361,7 @@ fun ThoseDaysScreen(
                     )
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(16.dp),
+                        insideMargin = PaddingValues(0.dp),
                         colors = CardDefaults.defaultColors(
                             color = MiuixTheme.colorScheme.surfaceContainer,
                         ),
@@ -303,7 +374,9 @@ fun ThoseDaysScreen(
                                 value = dayName,
                                 onValueChange = { dayName = it },
                                 label = "日子名称",
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 maxLines = 1,
                             )
 
@@ -311,19 +384,29 @@ fun ThoseDaysScreen(
                                 title = "类型",
                                 items = typeOptions,
                                 selectedIndex = typeOptions.indexOf(dayType),
-                                onSelectedIndexChange = { dayType = typeOptions[it] },
+                                onSelectedIndexChange = { applyTypeChange(typeOptions[it]) },
                             )
 
-                            WindowDropdownPreference(
-                                title = "重复周期",
-                                items = repeatOptions,
-                                selectedIndex = repeatOptions.indexOf(repeatCycle),
-                                onSelectedIndexChange = { repeatCycle = repeatOptions[it] },
-                            )
+                            if (dayType == "倒/正数日") {
+                                WindowDropdownPreference(
+                                    title = "重复周期",
+                                    items = repeatOptions,
+                                    selectedIndex = repeatOptions.indexOf(repeatCycle),
+                                    onSelectedIndexChange = { applyRepeatCycleChange(repeatOptions[it]) },
+                                )
+                            }
 
                             Surface(
-                                onClick = { showDateDialog = true },
-                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    when {
+                                        repeatCycle == "每周" -> showWeekDaysDialog = true
+                                        repeatCycle == "每月" -> showMonthDaysDialog = true
+                                        else -> showDateDialog = true
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
                                 shape = RoundedCornerShape(16.dp),
                                 color = MiuixTheme.colorScheme.secondaryContainer,
                             ) {
@@ -364,7 +447,9 @@ fun ThoseDaysScreen(
                                 singleLine = false,
                                 minLines = 3,
                                 maxLines = 5,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                             )
                         }
                     }
@@ -376,6 +461,7 @@ fun ThoseDaysScreen(
                     )
                     Card(
                         modifier = Modifier.fillMaxWidth(),
+                        insideMargin = PaddingValues(0.dp),
                         colors = CardDefaults.defaultColors(
                             color = MiuixTheme.colorScheme.surfaceContainer,
                         ),
@@ -384,6 +470,7 @@ fun ThoseDaysScreen(
                             title = "置顶",
                             checked = isPinned,
                             onCheckedChange = { isPinned = it },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         )
                     }
 
@@ -484,6 +571,133 @@ fun ThoseDaysScreen(
             }
 
             WindowDialog(
+                title = "选择每周重复",
+                show = showWeekDaysDialog,
+                onDismissRequest = { showWeekDaysDialog = false },
+            ) {
+                var tempWeekDays by remember { mutableStateOf(selectedWeekDays) }
+                val weekDayOptions = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        weekDayOptions.forEachIndexed { index, label ->
+                            val isSelected = tempWeekDays.contains(index)
+                            Surface(
+                                onClick = {
+                                    tempWeekDays = if (isSelected) tempWeekDays - index else tempWeekDays + index
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) {
+                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                } else {
+                                    MiuixTheme.colorScheme.secondaryContainer
+                                },
+                            ) {
+                                Text(
+                                    text = label,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSecondaryContainer,
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.padding(bottom = 16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        TextButton(
+                            text = "取消",
+                            onClick = { showWeekDaysDialog = false },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "确定",
+                            onClick = {
+                                selectedWeekDays = tempWeekDays
+                                syncDateLabel()
+                                showWeekDaysDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
+                }
+            }
+
+            WindowDialog(
+                title = "选择每月重复",
+                show = showMonthDaysDialog,
+                onDismissRequest = { showMonthDaysDialog = false },
+            ) {
+                var tempMonthDays by remember { mutableStateOf(selectedMonthDays) }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        (1..31).forEach { day ->
+                            val isSelected = tempMonthDays.contains(day)
+                            Surface(
+                                onClick = {
+                                    tempMonthDays = if (isSelected) tempMonthDays - day else tempMonthDays + day
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) {
+                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                } else {
+                                    MiuixTheme.colorScheme.secondaryContainer
+                                },
+                            ) {
+                                Text(
+                                    text = day.toString(),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSecondaryContainer,
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.padding(bottom = 16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        TextButton(
+                            text = "取消",
+                            onClick = { showMonthDaysDialog = false },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "确定",
+                            onClick = {
+                                selectedMonthDays = tempMonthDays
+                                syncDateLabel()
+                                showMonthDaysDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
+                }
+            }
+
+            WindowDialog(
                 title = "选择日期",
                 show = showDateDialog,
                 onDismissRequest = { showDateDialog = false },
@@ -563,18 +777,14 @@ fun ThoseDaysScreen(
                     ) {
                         TextButton(
                             text = "取消",
-                            onClick = {
-                                selectedYear = currentYear
-                                selectedMonth = currentMonth
-                                selectedDay = currentDay
-                                showDateDialog = false
-                            },
+                            onClick = { showDateDialog = false },
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(
                             text = "确定",
                             onClick = {
-                                selectedDate = "$selectedYear-${selectedMonth.toString().padStart(2, '0')}-${selectedDay.toString().padStart(2, '0')}"
+                                hasPickedDate = true
+                                syncDateLabel()
                                 showDateDialog = false
                             },
                             modifier = Modifier.weight(1f),
