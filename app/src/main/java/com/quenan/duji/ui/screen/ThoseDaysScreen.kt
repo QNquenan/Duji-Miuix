@@ -417,7 +417,6 @@ fun ThoseDaysScreen(
                     )
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(0.dp),
                         colors = CardDefaults.defaultColors(
                             color = MiuixTheme.colorScheme.surfaceContainer,
                         ),
@@ -441,7 +440,7 @@ fun ThoseDaysScreen(
                                 items = typeOptions,
                                 selectedIndex = typeOptions.indexOf(dayType),
                                 onSelectedIndexChange = { applyTypeChange(typeOptions[it]) },
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                insideMargin = PaddingValues(horizontal = 16.dp)
                             )
 
                             if (dayType == "倒/正数日") {
@@ -450,7 +449,7 @@ fun ThoseDaysScreen(
                                     items = repeatOptions,
                                     selectedIndex = repeatOptions.indexOf(repeatCycle),
                                     onSelectedIndexChange = { applyRepeatCycleChange(repeatOptions[it]) },
-                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    insideMargin = PaddingValues(horizontal = 16.dp)
                                 )
                             }
 
@@ -519,7 +518,6 @@ fun ThoseDaysScreen(
                     )
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(0.dp),
                         colors = CardDefaults.defaultColors(
                             color = MiuixTheme.colorScheme.surfaceContainer,
                         ),
@@ -528,7 +526,6 @@ fun ThoseDaysScreen(
                             title = "置顶",
                             checked = isPinned,
                             onCheckedChange = { isPinned = it },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         )
                     }
 
@@ -569,23 +566,15 @@ fun ThoseDaysScreen(
                                     MiuixTheme.colorScheme.secondaryContainer
                                 },
                             ) {
-                                Column(
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 8.dp, horizontal = 4.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        .height(44.dp),
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
                                         text = option.emoji,
                                         fontSize = 24.sp,
-                                    )
-                                    Text(
-                                        text = option.name,
-                                        fontSize = 10.sp,
-                                        color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackgroundVariant,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1,
                                     )
                                 }
                             }
