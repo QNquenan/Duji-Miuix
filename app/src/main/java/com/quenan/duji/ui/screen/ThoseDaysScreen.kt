@@ -55,6 +55,7 @@ import com.quenan.duji.data.day.parseDayDate
 import com.quenan.duji.data.day.repeatLabel
 import com.quenan.duji.data.day.targetDateFormatted
 import com.quenan.duji.data.day.typeLabel
+import com.quenan.duji.ui.component.EmptyStateCard
 import com.quenan.duji.ui.component.rememberNoticeAction
 import com.quenan.duji.ui.util.LunarDate
 import com.quenan.duji.ui.util.lunarMonthDayCount
@@ -188,15 +189,15 @@ fun ThoseDaysScreen(
     var lunarDay by remember { mutableIntStateOf(currentDay.coerceAtMost(30)) }
     var searchQuery by remember { mutableStateOf("") }
     var searchExpanded by remember { mutableStateOf(false) }
-    val filteredDays = remember(days, searchQuery) {
-        val keyword = searchQuery.trim()
-        if (keyword.isEmpty()) {
+    val normalizedSearchQuery = remember(searchQuery) { searchQuery.trim() }
+    val filteredDays = remember(days, normalizedSearchQuery) {
+        if (normalizedSearchQuery.isEmpty()) {
             days
         } else {
             days.filter { day ->
-                day.name.contains(keyword, ignoreCase = true) ||
-                    day.note.contains(keyword, ignoreCase = true) ||
-                    day.emoji.contains(keyword)
+                day.name.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    day.note.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    day.emoji.contains(normalizedSearchQuery)
             }
         }
     }
@@ -415,7 +416,7 @@ fun ThoseDaysScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MiuixTheme.colorScheme.surfaceContainer)
+                        .background(MiuixTheme.colorScheme.surface)
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
                     SearchBar(
@@ -451,9 +452,14 @@ fun ThoseDaysScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(text = "那些日子", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "还没有日子，点击右下角 + 添加", color = MiuixTheme.colorScheme.onBackgroundVariant)
+                    EmptyStateCard(
+                        title = if (normalizedSearchQuery.isEmpty()) "那些日子" else "没有找到日子",
+                        summary = if (normalizedSearchQuery.isEmpty()) {
+                            "还没有日子，点击右下角 + 添加"
+                        } else {
+                            "没有匹配“${normalizedSearchQuery}”的日子"
+                        },
+                    )
                 }
             } else if (currentViewMode == ThoseDaysViewMode.List) {
                 LazyColumn(

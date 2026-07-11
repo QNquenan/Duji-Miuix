@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.data.item.ItemData
 import com.quenan.duji.data.item.ItemStats
+import com.quenan.duji.ui.component.EmptyStateCard
 import com.quenan.duji.ui.component.rememberNoticeAction
 import java.util.Calendar
 import kotlinx.coroutines.launch
@@ -158,15 +159,15 @@ fun MyItemsScreen(
     var itemViewMode by remember { mutableStateOf(ItemViewMode.List) }
     var searchQuery by remember { mutableStateOf("") }
     var searchExpanded by remember { mutableStateOf(false) }
-    val filteredItems = remember(items, searchQuery) {
-        val keyword = searchQuery.trim()
-        if (keyword.isEmpty()) {
+    val normalizedSearchQuery = remember(searchQuery) { searchQuery.trim() }
+    val filteredItems = remember(items, normalizedSearchQuery) {
+        if (normalizedSearchQuery.isEmpty()) {
             items
         } else {
             items.filter { item ->
-                item.name.contains(keyword, ignoreCase = true) ||
-                    item.note.contains(keyword, ignoreCase = true) ||
-                    item.icon.contains(keyword)
+                item.name.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    item.note.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    item.icon.contains(normalizedSearchQuery)
             }
         }
     }
@@ -289,7 +290,7 @@ fun MyItemsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MiuixTheme.colorScheme.surfaceContainer)
+                        .background(MiuixTheme.colorScheme.surface)
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
                     SearchBar(
@@ -318,7 +319,25 @@ fun MyItemsScreen(
         Box(
             modifier = modifier.fillMaxSize()
         ) {
-            if (itemViewMode == ItemViewMode.List) {
+            if (filteredItems.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    EmptyStateCard(
+                        title = if (normalizedSearchQuery.isEmpty()) "我的物品" else "没有找到物品",
+                        summary = if (normalizedSearchQuery.isEmpty()) {
+                            "还没有物品，点击右下角 + 添加"
+                        } else {
+                            "没有匹配“${normalizedSearchQuery}”的物品"
+                        },
+                    )
+                }
+            } else if (itemViewMode == ItemViewMode.List) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
