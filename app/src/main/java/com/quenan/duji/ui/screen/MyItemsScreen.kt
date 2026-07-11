@@ -286,25 +286,32 @@ fun MyItemsScreen(
                         }
                     }
                 )
-                SearchBar(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = DpSize(0.dp, 0.dp),
-                    inputField = {
-                        InputField(
-                            query = searchQuery,
-                            onQueryChange = {
-                                searchQuery = it
-                                searchExpanded = it.isNotBlank()
-                            },
-                            onSearch = { searchExpanded = false },
-                            expanded = searchExpanded,
-                            onExpandedChange = { searchExpanded = it },
-                            label = "搜索物品"
-                        )
-                    },
-                    expanded = searchExpanded,
-                    onExpandedChange = { searchExpanded = it }
-                ) {}
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MiuixTheme.colorScheme.surfaceContainer)
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    SearchBar(
+                        modifier = Modifier.fillMaxWidth(),
+                        insideMargin = DpSize(0.dp, 0.dp),
+                        inputField = {
+                            InputField(
+                                query = searchQuery,
+                                onQueryChange = {
+                                    searchQuery = it
+                                    searchExpanded = it.isNotBlank()
+                                },
+                                onSearch = { searchExpanded = false },
+                                expanded = searchExpanded,
+                                onExpandedChange = { searchExpanded = it },
+                                label = "搜索物品"
+                            )
+                        },
+                        expanded = searchExpanded,
+                        onExpandedChange = { searchExpanded = it }
+                    ) {}
+                }
             }
         }
     ) { innerPadding ->
