@@ -3,6 +3,7 @@ package com.quenan.duji.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
@@ -43,6 +44,8 @@ object WidgetUpdateDispatcher {
                         WidgetSelectionType.MY_ITEM_WIDE -> MyItemWideWidget().update(appContext, targetGlanceId)
                     }
                     Log.i(TAG, "single widget update completed: appWidgetId=$appWidgetId")
+                    delay(400L)
+                    requestSystemUpdate(appContext, appWidgetId, selection.type)
                     return@launch
                 } catch (error: Exception) {
                     Log.w(TAG, "single widget update failed: appWidgetId=$appWidgetId, attempt=${attempt + 1}/4", error)
@@ -57,7 +60,22 @@ object WidgetUpdateDispatcher {
                 WidgetSelectionType.MY_ITEM_WIDE -> MyItemWideWidget().updateAll(appContext)
             }
             Log.i(TAG, "updateAll fallback completed: appWidgetId=$appWidgetId")
+            requestSystemUpdate(appContext, appWidgetId, selection.type)
         }
+    }
+
+    private fun requestSystemUpdate(context: Context, appWidgetId: Int, type: WidgetSelectionType) {
+        val receiverClass = when (type) {
+            WidgetSelectionType.MY_ITEM_SQUARE -> MyItemSquareWidgetReceiver::class.java
+            WidgetSelectionType.THOSE_DAY_SQUARE -> ThoseDaySquareWidgetReceiver::class.java
+            WidgetSelectionType.MY_ITEM_WIDE -> MyItemWideWidgetReceiver::class.java
+        }
+        val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).apply {
+            component = ComponentName(context, receiverClass)
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
+        }
+        Log.i(TAG, "request system widget update: appWidgetId=$appWidgetId, receiver=${receiverClass.simpleName}")
+        context.sendBroadcast(intent)
     }
 
     suspend fun hasAnyWidget(context: Context): Boolean {
