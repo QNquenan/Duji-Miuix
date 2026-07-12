@@ -83,15 +83,12 @@ abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
                                 }
                                 val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                                 setResult(Activity.RESULT_OK, result)
-                                if (selection.type != WidgetSelectionType.THOSE_DAY_SQUARE) {
-                                    runBlocking {
-                                        WidgetUpdateDispatcher.updateConfiguredWidget(
-                                            context = applicationContext,
-                                            appWidgetId = appWidgetId,
-                                            selection = selection,
-                                        )
-                                        WidgetUpdateDispatcher.refreshAll(applicationContext)
-                                    }
+                                runBlocking {
+                                    WidgetUpdateDispatcher.updateConfiguredWidget(
+                                        context = applicationContext,
+                                        appWidgetId = appWidgetId,
+                                        selection = selection,
+                                    )
                                 }
                                 finish()
                             })

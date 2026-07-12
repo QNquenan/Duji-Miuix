@@ -20,8 +20,7 @@ object WidgetUpdateDispatcher {
     }
 
     suspend fun updateConfiguredWidget(context: Context, appWidgetId: Int, selection: WidgetSelection) {
-        val manager = GlanceAppWidgetManager(context)
-        val targetGlanceId = manager.getGlanceIdBy(appWidgetId)
+        val targetGlanceId = GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
 
         when (selection.type) {
             WidgetSelectionType.MY_ITEM_SQUARE -> MyItemSquareWidget().update(context, targetGlanceId)
