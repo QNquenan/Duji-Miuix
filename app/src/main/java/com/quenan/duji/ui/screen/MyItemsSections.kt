@@ -122,14 +122,18 @@ internal fun MyItemsContent(
             item {
                 StatsCard(stats = stats)
             }
-            items(filteredItems, key = { it.item.id }) { model ->
+            items(
+                items = filteredItems,
+                key = { it.item.id },
+                contentType = { "item-list" }
+            ) { model ->
                 ItemListCard(
-                    icon = model.item.icon,
-                    name = model.item.name,
-                    date = model.item.date,
+                    icon = model.iconText,
+                    name = model.title,
+                    date = model.dateText,
                     avgPrice = model.avgPriceText,
                     totalPrice = model.totalPriceText,
-                    isPinned = model.item.isPinned,
+                    isPinned = model.isPinned,
                     onClick = { onItemClick(model.item) }
                 )
             }
@@ -153,15 +157,19 @@ internal fun MyItemsContent(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 StatsCard(stats = stats)
             }
-            items(filteredItems.size, key = { filteredItems[it].item.id }) { index ->
+            items(
+                count = filteredItems.size,
+                key = { filteredItems[it].item.id },
+                contentType = { "item-grid" }
+            ) { index ->
                 val model = filteredItems[index]
                 ItemGridCard(
-                    icon = model.item.icon,
-                    name = model.item.name,
-                    date = model.item.date,
+                    icon = model.iconText,
+                    name = model.title,
+                    date = model.dateText,
                     avgPrice = model.avgPriceText,
                     totalPrice = model.totalPriceText,
-                    isPinned = model.item.isPinned,
+                    isPinned = model.isPinned,
                     onClick = { onItemClick(model.item) }
                 )
             }

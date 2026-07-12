@@ -1,10 +1,10 @@
 [
   {
     "date": "2026-07-12",
-    "title": "v0.9.0",
+    "title": "v0.9.1",
     "items": [
-      "refactor: 前移物品与日子卡片的派生展示计算，减少列表重组时的重复开销。",
-      "refactor: 拆分 MyItems 与 ThoseDays 的搜索区、内容区和详情区组件，减轻单页组合负担。",
+      "refactor: 为物品与日子卡片固化稳定展示字段，减少滚动中的重复拆解。",
+      "refactor: 为 LazyColumn 与 LazyVerticalGrid 补充 key 和 contentType，提升懒加载复用稳定性。",
       "fix: 保持设置页版本展示与最新更新日志版本一致。"
     ]
   },

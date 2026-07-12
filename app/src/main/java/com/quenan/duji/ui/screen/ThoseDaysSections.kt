@@ -117,7 +117,11 @@ internal fun ThoseDaysContent(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(filteredDays, key = { it.day.id }) { model ->
+            items(
+                items = filteredDays,
+                key = { it.day.id },
+                contentType = { "day-list" }
+            ) { model ->
                 DayListItem(
                     day = model.day,
                     status = model.status,
@@ -141,7 +145,11 @@ internal fun ThoseDaysContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(filteredDays.size, key = { filteredDays[it].day.id }) { index ->
+            items(
+                count = filteredDays.size,
+                key = { filteredDays[it].day.id },
+                contentType = { "day-grid" }
+            ) { index ->
                 val model = filteredDays[index]
                 DayGridItem(
                     day = model.day,

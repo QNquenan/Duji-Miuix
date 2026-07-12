@@ -29,15 +29,7 @@ class MyItemsViewModel(application: Application) : AndroidViewModel(application)
     val items = sortedItems
 
     val itemCardModels = sortedItems
-        .map { itemList ->
-            itemList.map { item ->
-                ItemCardUiModel(
-                    item = item,
-                    avgPriceText = buildAvgPriceText(item.price, item.date),
-                    totalPriceText = buildTotalPriceText(item.price),
-                )
-            }
-        }
+        .map { itemList -> itemList.toItemCardModels() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val currentSort = sortOption
@@ -127,6 +119,20 @@ data class ItemSortOption(
         fun default() = ItemSortOption(
             field = ItemSortField.CREATED_AT,
             direction = SortDirection.DESC,
+        )
+    }
+}
+
+private fun List<ItemData>.toItemCardModels(): List<ItemCardUiModel> {
+    return map { item ->
+        ItemCardUiModel(
+            item = item,
+            title = item.name,
+            iconText = item.icon,
+            dateText = item.date,
+            avgPriceText = buildAvgPriceText(item.price, item.date),
+            totalPriceText = buildTotalPriceText(item.price),
+            isPinned = item.isPinned,
         )
     }
 }

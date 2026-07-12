@@ -30,14 +30,7 @@ class ThoseDaysViewModel(application: Application) : AndroidViewModel(applicatio
     val days = sortedDays
 
     val dayCardModels = sortedDays
-        .map { dayList ->
-            dayList.map { day ->
-                DayCardUiModel(
-                    day = day,
-                    status = day.computeStatus(),
-                )
-            }
-        }
+        .map { dayList -> dayList.toDayCardModels() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val currentViewMode = viewMode
@@ -119,6 +112,19 @@ data class DaySortOption(
         fun default() = DaySortOption(
             field = DaySortField.CREATED_AT,
             direction = SortDirection.DESC,
+        )
+    }
+}
+
+private fun List<DayData>.toDayCardModels(): List<DayCardUiModel> {
+    return map { day ->
+        DayCardUiModel(
+            day = day,
+            title = day.name,
+            iconText = day.emoji,
+            dateText = day.targetDate,
+            status = day.computeStatus(),
+            isPinned = day.isPinned,
         )
     }
 }
