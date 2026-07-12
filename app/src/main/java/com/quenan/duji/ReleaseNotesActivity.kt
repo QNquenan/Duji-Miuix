@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,9 +64,11 @@ class ReleaseNotesActivity : ComponentActivity() {
                                     )
                                 }
                             },
+                            color = Color.Transparent,
                             scrollBehavior = scrollBehavior,
                         )
-                    }
+                    },
+                    color = Color.Transparent,
                 ) { innerPadding ->
                     Column(
                         modifier = Modifier
@@ -84,7 +88,7 @@ class ReleaseNotesActivity : ComponentActivity() {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(0.dp),
-                                colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+                                colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surface),
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -100,14 +104,18 @@ class ReleaseNotesActivity : ComponentActivity() {
                                     note.items.forEach { item ->
                                         Text(
                                             text = item,
-                                            color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                            color = itemColor(item),
                                         )
                                     }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(
+                            modifier = Modifier
+                                .height(12.dp)
+                                .navigationBarsPadding()
+                        )
                     }
                 }
             }
@@ -136,5 +144,16 @@ class ReleaseNotesActivity : ComponentActivity() {
                 }
             }
         }.getOrDefault(emptyList())
+    }
+
+    private fun itemColor(item: String): Color {
+        return when {
+            item.startsWith("feat:") -> Color(0xFF5EBD7D)
+            item.startsWith("fix:") -> Color(0xFF6EA8FE)
+            item.startsWith("style:") -> Color(0xFFC084FC)
+            item.startsWith("docs:") -> Color(0xFF9CA3AF)
+            item.startsWith("refactor:") || item.startsWith("refactor(ui):") -> Color(0xFFF6C453)
+            else -> MiuixTheme.colorScheme.onBackgroundVariant
+        }
     }
 }

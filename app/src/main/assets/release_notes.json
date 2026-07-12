@@ -66,8 +66,8 @@
       "fix: 物品表单改为浮动标签输入框。",
       "style: 调整我的物品排序菜单层级。",
       "feat: 增加我的物品排序功能并补充提交规范。",
-      "调整物品详情备注展示与标签样式。",
-      "调整物品详情详细信息左右布局。",
+      "style: 调整物品详情备注展示与标签样式。",
+      "style: 调整物品详情详细信息左右布局。",
       "feat: 增加可复用轻提示组件。",
       "fix: 修复轻提示退场动画。",
       "refactor: 统一使用系统提示消息。",
@@ -84,15 +84,15 @@
       "style: 重构物品详情弹层布局。",
       "fix: 修复物品详情弹层关闭与分隔线显示。",
       "style: 统一小标题内边距。",
-      "重构添加物品表单卡片布局。",
-      "设置底部弹层背景颜色。",
-      "修正 FAB 隐藏方向。",
-      "按文档重构物品页滚动结构。",
-      "同步 FAB 与标题滚动联动。",
-      "修正嵌套脚手架下的 FAB 联动。",
-      "改用 Miuix Scaffold 托管 FAB。",
-      "add local item storage。",
-      "replace room with datastore。"
+      "refactor: 重构添加物品表单卡片布局。",
+      "style: 设置底部弹层背景颜色。",
+      "fix: 修正 FAB 隐藏方向。",
+      "refactor: 按文档重构物品页滚动结构。",
+      "feat: 同步 FAB 与标题滚动联动。",
+      "fix: 修正嵌套脚手架下的 FAB 联动。",
+      "refactor: 改用 Miuix Scaffold 托管 FAB。",
+      "feat: add local item storage。",
+      "refactor: replace room with datastore。"
     ]
   },
   {
@@ -107,7 +107,7 @@
       "feat: 图标选择器支持 5 列 emoji、自定义与高亮。",
       "style: 调整图标占位框、边框、卡片背景与点击反馈细节。",
       "feat: 使用 fav.png 生成并替换 App 图标资源。",
-      "初始化 DuJi 项目，并建立基础页面与工作流规则。"
+      "docs: 初始化 DuJi 项目，并建立基础页面与工作流规则。"
     ]
   }
 ]
