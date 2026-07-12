@@ -16,9 +16,11 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
+import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -53,7 +55,8 @@ private fun WideSummaryWidgetContent(model: ItemWideSummaryWidgetModel) {
                     color = ColorProvider(R.color.widget_on_dark),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                )
+                ),
+                modifier = GlanceModifier.padding(bottom = 16.dp)
             )
             Row(
                 modifier = GlanceModifier
@@ -63,7 +66,9 @@ private fun WideSummaryWidgetContent(model: ItemWideSummaryWidgetModel) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 WideStatColumn(label = "物品价值", value = model.totalValueText)
+                Spacer(GlanceModifier.width(24.dp))
                 WideStatColumn(label = "物品数量", value = model.itemCountText)
+                Spacer(GlanceModifier.width(24.dp))
                 WideStatColumn(label = "总日均价格", value = model.totalDailyPriceText)
             }
         }
@@ -78,14 +83,6 @@ private fun WideStatColumn(label: String, value: String) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = value,
-            style = TextStyle(
-                color = ColorProvider(R.color.widget_on_dark),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        )
-        Text(
             text = label,
             style = TextStyle(
                 color = ColorProvider(R.color.widget_on_dark_secondary),
@@ -93,5 +90,15 @@ private fun WideStatColumn(label: String, value: String) {
             ),
             modifier = GlanceModifier.padding(top = 6.dp),
         )
+
+        Text(
+            text = value,
+            style = TextStyle(
+                color = ColorProvider(R.color.widget_on_dark),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        )
+
     }
 }

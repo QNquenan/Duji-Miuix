@@ -18,10 +18,6 @@
             android:exported="false" />
 
         <activity
-            android:name=".widget.ui.WidgetEntryActivity"
-            android:exported="false" />
-
-        <activity
             android:name=".widget.ui.MyItemSquareWidgetConfigureActivity"
             android:exported="false" />
 

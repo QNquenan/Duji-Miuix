@@ -20,6 +20,7 @@ import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -46,7 +47,8 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
     val context = LocalContext.current
     Box(
         modifier = GlanceModifier
-            .fillMaxSize()
+            .fillMaxWidth()
+            .height(160.dp)
             .appWidgetBackground()
             .background(ImageProviders.surfaceBackground)
             .cornerRadius(32.dp)

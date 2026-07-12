@@ -73,15 +73,23 @@ abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
                     ) {
                         items(entries) { entry ->
                             EntryCard(entry = entry, onClick = {
+                                val selection = toSelection(entry)
                                 runBlocking {
                                     WidgetSelectionRepository(applicationContext).saveSelection(
                                         appWidgetId = appWidgetId,
-                                        selection = toSelection(entry),
+                                        selection = selection,
                                     )
-                                    WidgetUpdateDispatcher.refreshAll(applicationContext)
                                 }
                                 val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                                 setResult(Activity.RESULT_OK, result)
+                                runBlocking {
+                                    WidgetUpdateDispatcher.updateConfiguredWidget(
+                                        context = applicationContext,
+                                        appWidgetId = appWidgetId,
+                                        selection = selection,
+                                    )
+                                    WidgetUpdateDispatcher.refreshAll(applicationContext)
+                                }
                                 finish()
                             })
                         }

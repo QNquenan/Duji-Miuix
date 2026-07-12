@@ -245,9 +245,11 @@ fun SettingsScreen(
                         },
                     )
                     ArrowPreference(
-                        title = "当前软件版本",
+                        title = "软件版本",
                         endActions = { Text(text = versionName, color = MiuixTheme.colorScheme.onBackgroundVariant) },
-                        onClick = { },
+                        onClick = {
+                            showNotice("已经是最新版本了")
+                        },
                         startAction = {
                             Icon(
                                 imageVector = MiuixIcons.Info,

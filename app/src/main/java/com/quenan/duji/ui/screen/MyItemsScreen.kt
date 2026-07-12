@@ -628,7 +628,7 @@ fun MyItemsScreen(
                         SwitchPreference(
                             title = "置顶",
                             checked = isPinned,
-                            onCheckedChange = { isPinned = it }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            onCheckedChange = { isPinned = it }
                         )
                     }
 
