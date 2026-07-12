@@ -1,6 +1,7 @@
 package com.quenan.duji.widget
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +32,9 @@ import com.quenan.duji.R
 class ThoseDaySquareWidget : BaseDuJiWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val glanceId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+        Log.i("DuJiWidget", "provideGlance: glanceId=$id, appWidgetId=$glanceId")
         val model = WidgetDataProvider(context).loadSquareDay(glanceId, context)
+        Log.i("DuJiWidget", "render result: appWidgetId=$glanceId, model=${model?.let { "id=${it.id}, title=${it.titlePrefix}${it.titleSuffix}" } ?: "null"}")
         provideContent {
             if (model == null) {
                 emptyCard("那些日子", "点击进入应用重新选择日子")()

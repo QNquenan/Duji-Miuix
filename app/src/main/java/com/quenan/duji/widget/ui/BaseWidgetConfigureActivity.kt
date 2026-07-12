@@ -4,6 +4,7 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -40,6 +41,10 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
+    private companion object {
+        const val TAG = "DuJiWidget"
+    }
+
     protected var appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +54,9 @@ abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID,
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+        Log.i(TAG, "configure activity created: activity=${javaClass.simpleName}, appWidgetId=$appWidgetId")
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            Log.e(TAG, "invalid appWidgetId, finish configuration")
             finish()
             return
         }
@@ -75,14 +82,17 @@ abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
                         items(entries) { entry ->
                             EntryCard(entry = entry, onClick = {
                                 val selection = toSelection(entry)
+                                Log.i(TAG, "selection clicked: appWidgetId=$appWidgetId, selection=$selection")
                                 runBlocking {
                                     WidgetSelectionRepository(applicationContext).saveSelection(
                                         appWidgetId = appWidgetId,
                                         selection = selection,
                                     )
                                 }
+                                Log.i(TAG, "selection saved: appWidgetId=$appWidgetId, selection=$selection")
                                 val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                                 setResult(Activity.RESULT_OK, result)
+                                Log.i(TAG, "configuration result accepted: appWidgetId=$appWidgetId")
                                 WidgetUpdateDispatcher.updateConfiguredWidget(
                                     context = applicationContext,
                                     appWidgetId = appWidgetId,
