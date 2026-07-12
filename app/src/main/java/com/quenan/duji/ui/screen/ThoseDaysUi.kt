@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.quenan.duji.data.day.DayData
-import com.quenan.duji.data.day.computeStatus
+import com.quenan.duji.data.day.DayStatus
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -34,9 +34,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun DayListItem(
     day: DayData,
+    status: DayStatus,
     onClick: () -> Unit,
 ) {
-    val status = day.computeStatus()
     val pinColor = Color(0xFFFF9500)
 
     Card(
@@ -106,9 +106,9 @@ fun DayListItem(
 @Composable
 fun DayGridItem(
     day: DayData,
+    status: DayStatus,
     onClick: () -> Unit,
 ) {
-    val status = day.computeStatus()
     val pinColor = Color(0xFFFF9500)
 
     Card(

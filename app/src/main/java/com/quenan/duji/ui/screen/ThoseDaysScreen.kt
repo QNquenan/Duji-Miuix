@@ -136,7 +136,7 @@ fun ThoseDaysScreen(
     val typeOptions = remember { listOf("倒/正数日", "纪念日", "生日") }
     val repeatOptions = remember { listOf("不重复", "每周", "每月", "每年") }
     val viewModel: ThoseDaysViewModel = viewModel()
-    val days by viewModel.days.collectAsStateWithLifecycle()
+    val dayCardModels by viewModel.dayCardModels.collectAsStateWithLifecycle()
     val currentViewMode by viewModel.currentViewMode.collectAsStateWithLifecycle()
     val currentSort by viewModel.currentSort.collectAsStateWithLifecycle()
     val showNotice = rememberNoticeAction()
@@ -190,14 +190,14 @@ fun ThoseDaysScreen(
     var searchQuery by remember { mutableStateOf("") }
     var searchExpanded by remember { mutableStateOf(false) }
     val normalizedSearchQuery = remember(searchQuery) { searchQuery.trim() }
-    val filteredDays = remember(days, normalizedSearchQuery) {
+    val filteredDays = remember(dayCardModels, normalizedSearchQuery) {
         if (normalizedSearchQuery.isEmpty()) {
-            days
+            dayCardModels
         } else {
-            days.filter { day ->
-                day.name.contains(normalizedSearchQuery, ignoreCase = true) ||
-                    day.note.contains(normalizedSearchQuery, ignoreCase = true) ||
-                    day.emoji.contains(normalizedSearchQuery)
+            dayCardModels.filter { model ->
+                model.day.name.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    model.day.note.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    model.day.emoji.contains(normalizedSearchQuery)
             }
         }
     }
@@ -413,105 +413,32 @@ fun ThoseDaysScreen(
                         }
                     }
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MiuixTheme.colorScheme.surface)
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                ) {
-                    SearchBar(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = DpSize(0.dp, 0.dp),
-                        inputField = {
-                            InputField(
-                                query = searchQuery,
-                                onQueryChange = {
-                                    searchQuery = it
-                                    searchExpanded = it.isNotBlank()
-                                },
-                                onSearch = { searchExpanded = false },
-                                expanded = searchExpanded,
-                                onExpandedChange = { searchExpanded = it },
-                                label = "搜索日子"
-                            )
-                        },
-                        expanded = searchExpanded,
-                        onExpandedChange = { searchExpanded = it }
-                    ) {}
-                }
+                ThoseDaysSearchBar(
+                    searchQuery = searchQuery,
+                    searchExpanded = searchExpanded,
+                    onQueryChange = {
+                        searchQuery = it
+                        searchExpanded = it.isNotBlank()
+                    },
+                    onExpandedChange = { searchExpanded = it },
+                )
             }
         },
     ) { innerPadding ->
         Box(modifier = modifier.fillMaxSize()) {
-            if (filteredDays.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    EmptyStateCard(
-                        title = if (normalizedSearchQuery.isEmpty()) "那些日子" else "没有找到日子",
-                        summary = if (normalizedSearchQuery.isEmpty()) {
-                            "还没有日子，点击右下角 + 添加"
-                        } else {
-                            "没有匹配“${normalizedSearchQuery}”的日子"
-                        },
-                    )
-                }
-            } else if (currentViewMode == ThoseDaysViewMode.List) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(fabScrollConnection)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        top = innerPadding.calculateTopPadding() + 12.dp,
-                        bottom = contentPadding.calculateBottomPadding() + 12.dp,
-                        start = 12.dp,
-                        end = 12.dp,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(filteredDays, key = { it.id }) { day ->
-                        DayListItem(
-                            day = day,
-                            onClick = {
-                                selectedDayItem = day
-                                showDetailBottomSheet = true
-                            }
-                        )
-                    }
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(fabScrollConnection)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        top = innerPadding.calculateTopPadding() + 12.dp,
-                        bottom = contentPadding.calculateBottomPadding() + 12.dp,
-                        start = 12.dp,
-                        end = 12.dp,
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(filteredDays.size, key = { filteredDays[it].id }) { index ->
-                        DayGridItem(
-                            day = filteredDays[index],
-                            onClick = {
-                                selectedDayItem = filteredDays[index]
-                                showDetailBottomSheet = true
-                            }
-                        )
-                    }
-                }
-            }
+            ThoseDaysContent(
+                filteredDays = filteredDays,
+                normalizedSearchQuery = normalizedSearchQuery,
+                currentViewMode = currentViewMode,
+                innerPadding = innerPadding,
+                contentPadding = contentPadding,
+                fabScrollConnection = fabScrollConnection,
+                scrollBehavior = scrollBehavior,
+                onDayClick = { day ->
+                    selectedDayItem = day
+                    showDetailBottomSheet = true
+                },
+            )
 
             FloatingActionButton(
                 modifier = Modifier
@@ -562,50 +489,7 @@ fun ThoseDaysScreen(
                     onDismissRequest = { showDetailBottomSheet = false },
                     onDismissFinished = { selectedDayItem = null },
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .background(MiuixTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(text = detailDay.emoji, fontSize = 32.sp)
-                        }
-                        SmallTitle(text = "详细信息", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(16.dp),
-                            colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                DetailRow(label = "名称", value = detailDay.name)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                                DetailRow(label = "类型", value = detailDay.typeLabel())
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                                DetailRow(label = "数字", value = detailDay.computeStatus().statusText)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                                DetailRow(label = "日期", value = detailDay.targetDateFormatted())
-                            }
-                        }
-                        if (detailDay.note.isNotBlank()) {
-                            SmallTitle(text = "备注", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(16.dp),
-                                colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
-                            ) {
-                                Text(text = detailDay.note, fontSize = 16.sp, color = MiuixTheme.colorScheme.onBackground)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(24.dp))
-                    }
+                    ThoseDaysDetailContent(detailDay = detailDay)
                 }
             }
 
@@ -1081,7 +965,7 @@ private fun DatePickerDialog(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String) {
+internal fun ThoseDaysInlineDetailRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(text = label, fontSize = 14.sp, color = MiuixTheme.colorScheme.onBackgroundVariant)
         Spacer(modifier = Modifier.weight(1f))

@@ -27,6 +27,14 @@ fun List<ItemData>.toStats(): ItemStats = ItemStats(
     },
 )
 
+fun buildAvgPriceText(price: Int, dateString: String): String {
+    return "¥${price / maxOf(1, daysSince(dateString))}/天"
+}
+
+fun buildTotalPriceText(price: Int): String {
+    return "¥${price}"
+}
+
 fun parseItemDateToMillis(dateString: String): Long? {
     return runCatching {
         val parts = dateString.split("-")
@@ -40,7 +48,7 @@ fun parseItemDateToMillis(dateString: String): Long? {
     }.getOrNull()
 }
 
-private fun daysSince(dateString: String): Int {
+fun daysSince(dateString: String): Int {
     return parseItemDateToMillis(dateString)?.let { purchaseMillis ->
         val diff = Calendar.getInstance().timeInMillis - purchaseMillis
         maxOf(1, (diff / (1000 * 60 * 60 * 24)).toInt())

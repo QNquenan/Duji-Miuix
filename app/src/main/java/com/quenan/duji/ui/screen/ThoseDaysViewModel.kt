@@ -7,11 +7,13 @@ import com.quenan.duji.data.day.DayData
 import com.quenan.duji.data.day.DayRepository
 import com.quenan.duji.data.day.DayType
 import com.quenan.duji.data.day.RepeatCycle
+import com.quenan.duji.data.day.computeStatus
 import com.quenan.duji.data.day.parseDayDate
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -21,9 +23,22 @@ class ThoseDaysViewModel(application: Application) : AndroidViewModel(applicatio
     private val viewMode = MutableStateFlow(ThoseDaysViewMode.List)
     private val sortOption = MutableStateFlow(DaySortOption.default())
 
-    val days = combine(repository.observeDays(), sortOption) { dayList, option ->
+    private val sortedDays = combine(repository.observeDays(), sortOption) { dayList, option ->
         dayList.sortedWith(dayComparator(option))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val days = sortedDays
+
+    val dayCardModels = sortedDays
+        .map { dayList ->
+            dayList.map { day ->
+                DayCardUiModel(
+                    day = day,
+                    status = day.computeStatus(),
+                )
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val currentViewMode = viewMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThoseDaysViewMode.List)

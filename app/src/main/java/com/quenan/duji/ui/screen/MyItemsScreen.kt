@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.data.item.ItemData
 import com.quenan.duji.data.item.ItemStats
+import com.quenan.duji.data.item.buildAvgPriceText
 import com.quenan.duji.ui.component.EmptyStateCard
 import com.quenan.duji.ui.component.rememberNoticeAction
 import java.util.Calendar
@@ -139,7 +140,7 @@ fun MyItemsScreen(
     var editingItem by remember { mutableStateOf<ItemData?>(null) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     val viewModel: MyItemsViewModel = viewModel()
-    val items by viewModel.items.collectAsStateWithLifecycle()
+    val itemCardModels by viewModel.itemCardModels.collectAsStateWithLifecycle()
     val currentSort by viewModel.currentSort.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -160,14 +161,14 @@ fun MyItemsScreen(
     var searchQuery by remember { mutableStateOf("") }
     var searchExpanded by remember { mutableStateOf(false) }
     val normalizedSearchQuery = remember(searchQuery) { searchQuery.trim() }
-    val filteredItems = remember(items, normalizedSearchQuery) {
+    val filteredItems = remember(itemCardModels, normalizedSearchQuery) {
         if (normalizedSearchQuery.isEmpty()) {
-            items
+            itemCardModels
         } else {
-            items.filter { item ->
-                item.name.contains(normalizedSearchQuery, ignoreCase = true) ||
-                    item.note.contains(normalizedSearchQuery, ignoreCase = true) ||
-                    item.icon.contains(normalizedSearchQuery)
+            itemCardModels.filter { model ->
+                model.item.name.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    model.item.note.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    model.item.icon.contains(normalizedSearchQuery)
             }
         }
     }
@@ -287,124 +288,35 @@ fun MyItemsScreen(
                         }
                     }
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MiuixTheme.colorScheme.surface)
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                ) {
-                    SearchBar(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = DpSize(0.dp, 0.dp),
-                        inputField = {
-                            InputField(
-                                query = searchQuery,
-                                onQueryChange = {
-                                    searchQuery = it
-                                    searchExpanded = it.isNotBlank()
-                                },
-                                onSearch = { searchExpanded = false },
-                                expanded = searchExpanded,
-                                onExpandedChange = { searchExpanded = it },
-                                label = "搜索物品"
-                            )
-                        },
-                        expanded = searchExpanded,
-                        onExpandedChange = { searchExpanded = it }
-                    ) {}
-                }
+                MyItemsSearchBar(
+                    searchQuery = searchQuery,
+                    searchExpanded = searchExpanded,
+                    onQueryChange = {
+                        searchQuery = it
+                        searchExpanded = it.isNotBlank()
+                    },
+                    onExpandedChange = { searchExpanded = it },
+                )
             }
         }
     ) { innerPadding ->
         Box(
             modifier = modifier.fillMaxSize()
         ) {
-            if (filteredItems.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    EmptyStateCard(
-                        title = if (normalizedSearchQuery.isEmpty()) "我的物品" else "没有找到物品",
-                        summary = if (normalizedSearchQuery.isEmpty()) {
-                            "还没有物品，点击右下角 + 添加"
-                        } else {
-                            "没有匹配“${normalizedSearchQuery}”的物品"
-                        },
-                    )
-                }
-            } else if (itemViewMode == ItemViewMode.List) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(fabScrollConnection)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        top = innerPadding.calculateTopPadding() + 12.dp,
-                        bottom = contentPadding.calculateBottomPadding() + 12.dp,
-                        start = 12.dp,
-                        end = 12.dp,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    item {
-                        StatsCard(stats = stats)
-                    }
-                    items(filteredItems, key = { it.id }) { item ->
-                        ItemListCard(
-                            icon = item.icon,
-                            name = item.name,
-                            date = item.date,
-                            avgPrice = "¥${item.price / maxOf(1, daysSince(item.date))}/天",
-                            totalPrice = "¥${item.price}",
-                            isPinned = item.isPinned,
-                            onClick = {
-                                selectedItem = item
-                                showDetailBottomSheet = true
-                            }
-                        )
-                    }
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(fabScrollConnection)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        top = innerPadding.calculateTopPadding() + 12.dp,
-                        bottom = contentPadding.calculateBottomPadding() + 12.dp,
-                        start = 12.dp,
-                        end = 12.dp,
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                        StatsCard(stats = stats)
-                    }
-                    items(filteredItems.size, key = { filteredItems[it].id }) { index ->
-                        val item = filteredItems[index]
-                        ItemGridCard(
-                            icon = item.icon,
-                            name = item.name,
-                            date = item.date,
-                            avgPrice = "¥${item.price / maxOf(1, daysSince(item.date))}/天",
-                            totalPrice = "¥${item.price}",
-                            isPinned = item.isPinned,
-                            onClick = {
-                                selectedItem = item
-                                showDetailBottomSheet = true
-                            }
-                        )
-                    }
-                }
-            }
+            MyItemsContent(
+                filteredItems = filteredItems,
+                normalizedSearchQuery = normalizedSearchQuery,
+                itemViewMode = itemViewMode,
+                stats = stats,
+                innerPadding = innerPadding,
+                contentPadding = contentPadding,
+                fabScrollConnection = fabScrollConnection,
+                scrollBehavior = scrollBehavior,
+                onItemClick = { item ->
+                    selectedItem = item
+                    showDetailBottomSheet = true
+                },
+            )
 
             FloatingActionButton(
                 modifier = Modifier
@@ -476,71 +388,7 @@ fun MyItemsScreen(
                         selectedItem = null
                     },
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .align(Alignment.CenterHorizontally)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(
-                                    color = MiuixTheme.colorScheme.secondaryContainer,
-                                    shape = RoundedCornerShape(16.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = detailItem.icon,
-                                fontSize = 32.sp,
-                            )
-                        }
-
-                        SmallTitle(text = "详细信息",insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(16.dp),
-                            colors = CardDefaults.defaultColors(
-                                color = MiuixTheme.colorScheme.surfaceContainer,
-                            ),
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                DetailRow(label = "名称", value = detailItem.name)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                                DetailRow(label = "购买日期", value = detailItem.date)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                                DetailRow(label = "总价格", value = "¥${detailItem.price}")
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                                DetailRow(label = "日均价格", value = "¥${detailItem.price / maxOf(1, daysSince(detailItem.date))}/天")
-                            }
-                        }
-                        if (detailItem.note.isNotBlank()) {
-                            SmallTitle(text = "备注", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(16.dp),
-                                colors = CardDefaults.defaultColors(
-                                    color = MiuixTheme.colorScheme.surfaceContainer,
-                                ),
-                            ) {
-                                Text(
-                                    text = detailItem.note,
-                                    fontSize = 16.sp,
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                )
-                            }
-                        }
-
-                        // 底部间距
-                        Spacer(modifier = Modifier.height(24.dp))
-                    }
+                    MyItemsDetailContent(detailItem = detailItem)
                 }
             }
 
@@ -1027,24 +875,9 @@ fun MyItemsScreen(
     }
 }
 
-private enum class ItemViewMode(val label: String) {
+internal enum class ItemViewMode(val label: String) {
     List("列表"),
     Grid("块状"),
-}
-
-private fun daysSince(dateString: String): Int {
-    return try {
-        val parts = dateString.split("-")
-        val year = parts[0].toInt()
-        val month = parts[1].toInt()
-        val day = parts[2].toInt()
-        val purchase = Calendar.getInstance().apply { set(year, month - 1, day) }
-        val now = Calendar.getInstance()
-        val diff = now.timeInMillis - purchase.timeInMillis
-        maxOf(1, (diff / (1000 * 60 * 60 * 24)).toInt())
-    } catch (_: Exception) {
-        1
-    }
 }
 
 private fun buildSortDirectionMenuTitle(direction: SortDirection): String {
@@ -1059,7 +892,7 @@ private fun sortDirectionLabel(direction: SortDirection): String {
 }
 
 @Composable
-private fun ItemListCard(
+internal fun ItemListCard(
     icon: String,
     name: String,
     date: String,
@@ -1162,7 +995,7 @@ private fun ItemListCard(
 }
 
 @Composable
-private fun ItemGridCard(
+internal fun ItemGridCard(
     icon: String,
     name: String,
     date: String,
@@ -1251,7 +1084,7 @@ private fun ItemGridCard(
 
 // ... 以下 StatsCard / StatItem 保持原样 ...
 @Composable
-private fun StatsCard(stats: ItemStats) {
+internal fun StatsCard(stats: ItemStats) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.defaultColors(
@@ -1298,7 +1131,7 @@ private fun StatsCard(stats: ItemStats) {
 }
 
 @Composable
-private fun DetailRow(
+internal fun MyItemsInlineDetailRow(
     label: String,
     value: String,
 ) {
