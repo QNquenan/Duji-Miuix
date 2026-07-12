@@ -431,6 +431,7 @@ fun MyItemsScreen(
                     show = showDetailBottomSheet,
                     title = "物品详情",
                     backgroundColor = MiuixTheme.colorScheme.surface,
+                    insideMargin = DpSize(10.dp, 12.dp),
                     startAction = {
                         val dismiss = LocalDismissState.current
                         IconButton(onClick = {
@@ -500,7 +501,7 @@ fun MyItemsScreen(
                             )
                         }
 
-                        SmallTitle(text = "详细信息",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                        SmallTitle(text = "详细信息",insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(16.dp),
@@ -521,7 +522,7 @@ fun MyItemsScreen(
                             }
                         }
                         if (detailItem.note.isNotBlank()) {
-                            SmallTitle(text = "备注", insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                            SmallTitle(text = "备注", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(16.dp),
@@ -590,6 +591,7 @@ fun MyItemsScreen(
                 show = showBottomSheet,
                 title = if (editingItem == null) "添加物品" else "修改物品",
                 backgroundColor = MiuixTheme.colorScheme.surface,
+                insideMargin = DpSize(10.dp, 12.dp),
                 startAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
@@ -681,7 +683,7 @@ fun MyItemsScreen(
                         )
                     }
 
-                    SmallTitle(text = "信息",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                    SmallTitle(text = "信息",insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(0.dp),
@@ -758,7 +760,7 @@ fun MyItemsScreen(
                         }
                     }
 
-                    SmallTitle(text = "功能",insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                    SmallTitle(text = "功能",insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                     Card(
                         modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp),
                         colors = CardDefaults.defaultColors(

@@ -533,6 +533,7 @@ fun ThoseDaysScreen(
                     show = showDetailBottomSheet,
                     title = "日子详情",
                     backgroundColor = MiuixTheme.colorScheme.surface,
+                    insideMargin = DpSize(10.dp, 12.dp),
                     startAction = {
                         val dismiss = LocalDismissState.current
                         IconButton(onClick = {
@@ -577,7 +578,7 @@ fun ThoseDaysScreen(
                         ) {
                             Text(text = detailDay.emoji, fontSize = 32.sp)
                         }
-                        SmallTitle(text = "详细信息", insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                        SmallTitle(text = "详细信息", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(16.dp),
@@ -594,7 +595,7 @@ fun ThoseDaysScreen(
                             }
                         }
                         if (detailDay.note.isNotBlank()) {
-                            SmallTitle(text = "备注", insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                            SmallTitle(text = "备注", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(16.dp),
@@ -641,6 +642,7 @@ fun ThoseDaysScreen(
                 show = showBottomSheet,
                 title = if (editingDay == null) "添加日子" else "修改日子",
                 backgroundColor = MiuixTheme.colorScheme.surface,
+                insideMargin = DpSize(10.dp, 12.dp),
                 startAction = {
                     val dismiss = LocalDismissState.current
                     IconButton(onClick = {
@@ -749,7 +751,7 @@ fun ThoseDaysScreen(
                         Text(text = selectedEmoji ?: "📅", fontSize = 32.sp)
                     }
 
-                    SmallTitle(text = "信息", insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                    SmallTitle(text = "信息", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)) {
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             TextField(value = dayName, onValueChange = { dayName = it }, label = "日子名称", modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), maxLines = 1)
@@ -780,7 +782,7 @@ fun ThoseDaysScreen(
                         }
                     }
 
-                    SmallTitle(text = "功能", insideMargin = PaddingValues(16.dp, 2.dp), modifier = Modifier.fillMaxWidth())
+                    SmallTitle(text = "功能", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
                     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)) {
                         SwitchPreference(title = "置顶", checked = isPinned, onCheckedChange = { isPinned = it })
                     }
