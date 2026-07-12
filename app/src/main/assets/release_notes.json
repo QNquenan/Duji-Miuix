@@ -1,11 +1,11 @@
 [
   {
     "date": "2026-07-13",
-    "title": "v0.10.12",
+    "title": "v0.10.13",
     "items": [
-      "fix: 让小组件 receiver 接管系统更新入口并触发 Glance 刷新。",
-      "fix: 增加 APPWIDGET_UPDATE 接收与处理日志。",
-      "debug: 增加小组件配置、更新与渲染链路的 Logcat 日志。"
+      "fix: 统一由小组件 receiver 异步执行 Glance 实例更新。",
+      "fix: 修复所有小组件配置完成后桌面不立即同步的问题。",
+      "debug: 增加 receiver 直接更新链路日志。"
     ]
   },
   {
