@@ -83,13 +83,11 @@ abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
                                 }
                                 val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                                 setResult(Activity.RESULT_OK, result)
-                                runBlocking {
-                                    WidgetUpdateDispatcher.updateConfiguredWidget(
-                                        context = applicationContext,
-                                        appWidgetId = appWidgetId,
-                                        selection = selection,
-                                    )
-                                }
+                                WidgetUpdateDispatcher.updateConfiguredWidget(
+                                    context = applicationContext,
+                                    appWidgetId = appWidgetId,
+                                    selection = selection,
+                                )
                                 finish()
                             })
                         }

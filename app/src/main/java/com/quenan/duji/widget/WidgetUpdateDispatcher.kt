@@ -5,8 +5,15 @@ import android.content.ComponentName
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 object WidgetUpdateDispatcher {
+    private val updateScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     suspend fun refreshAll(context: Context) {
         MyItemWideWidget().updateAll(context)
         MyItemSquareWidget().updateAll(context)
@@ -19,13 +26,28 @@ object WidgetUpdateDispatcher {
         )
     }
 
-    suspend fun updateConfiguredWidget(context: Context, appWidgetId: Int, selection: WidgetSelection) {
-        val targetGlanceId = GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+    fun updateConfiguredWidget(context: Context, appWidgetId: Int, selection: WidgetSelection) {
+        val appContext = context.applicationContext
+        updateScope.launch {
+            repeat(4) { attempt ->
+                try {
+                    val targetGlanceId = GlanceAppWidgetManager(appContext).getGlanceIdBy(appWidgetId)
+                    when (selection.type) {
+                        WidgetSelectionType.MY_ITEM_SQUARE -> MyItemSquareWidget().update(appContext, targetGlanceId)
+                        WidgetSelectionType.THOSE_DAY_SQUARE -> ThoseDaySquareWidget().update(appContext, targetGlanceId)
+                        WidgetSelectionType.MY_ITEM_WIDE -> MyItemWideWidget().update(appContext, targetGlanceId)
+                    }
+                    return@launch
+                } catch (_: IllegalArgumentException) {
+                    if (attempt < 3) delay(150L * (attempt + 1))
+                }
+            }
 
-        when (selection.type) {
-            WidgetSelectionType.MY_ITEM_SQUARE -> MyItemSquareWidget().update(context, targetGlanceId)
-            WidgetSelectionType.THOSE_DAY_SQUARE -> ThoseDaySquareWidget().update(context, targetGlanceId)
-            WidgetSelectionType.MY_ITEM_WIDE -> MyItemWideWidget().update(context, targetGlanceId)
+            when (selection.type) {
+                WidgetSelectionType.MY_ITEM_SQUARE -> MyItemSquareWidget().updateAll(appContext)
+                WidgetSelectionType.THOSE_DAY_SQUARE -> ThoseDaySquareWidget().updateAll(appContext)
+                WidgetSelectionType.MY_ITEM_WIDE -> MyItemWideWidget().updateAll(appContext)
+            }
         }
     }
 
