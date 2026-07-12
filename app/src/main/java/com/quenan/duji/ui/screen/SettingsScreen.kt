@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -28,7 +26,6 @@ import com.quenan.duji.data.backup.AppBackup
 import com.quenan.duji.data.backup.parseAppBackup
 import com.quenan.duji.data.backup.toJsonString
 import com.quenan.duji.data.day.DayRepository
-import com.quenan.duji.data.settings.SettingsRepository
 import com.quenan.duji.ui.component.rememberNoticeAction
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -51,6 +48,7 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun SettingsScreen(
@@ -81,13 +79,16 @@ fun SettingsScreen(
                     items = itemRepository.getAllItems(),
                     days = dayRepository.getAllDays(),
                 )
-                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
-                    writer.write(backup.toJsonString())
+                val json = backup.toJsonString()
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(json.toByteArray(StandardCharsets.UTF_8))
+                    outputStream.flush()
                 } ?: error("无法打开导出位置")
-            }.onSuccess {
-                showNotice("导出成功")
-            }.onFailure {
-                showNotice("导出失败")
+                backup.items.size to backup.days.size
+            }.onSuccess { (itemCount, dayCount) ->
+                showNotice("导出成功：物品 ${itemCount} 条，日子 ${dayCount} 条")
+            }.onFailure { throwable ->
+                showNotice("导出失败：${throwable.message ?: "未知错误"}")
             }
         }
     }
@@ -103,10 +104,11 @@ fun SettingsScreen(
                 val backup = parseAppBackup(raw)
                 itemRepository.importItems(backup.items)
                 dayRepository.importDays(backup.days)
-            }.onSuccess {
-                showNotice("导入成功")
-            }.onFailure {
-                showNotice("导入失败")
+                backup.items.size to backup.days.size
+            }.onSuccess { (itemCount, dayCount) ->
+                showNotice("导入成功：物品 ${itemCount} 条，日子 ${dayCount} 条")
+            }.onFailure { throwable ->
+                showNotice("导入失败：${throwable.message ?: "未知错误"}")
             }
         }
     }
