@@ -27,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.ui.theme.DuJiTheme
-import com.quenan.duji.widget.ThoseDaySquareWidgetReceiver
 import com.quenan.duji.widget.WidgetSelection
 import com.quenan.duji.widget.WidgetSelectionRepository
 import com.quenan.duji.widget.WidgetSelectionType
@@ -84,20 +83,15 @@ abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
                                 }
                                 val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                                 setResult(Activity.RESULT_OK, result)
-                                runBlocking {
-                                    if (selection.type == WidgetSelectionType.THOSE_DAY_SQUARE) {
-                                        WidgetUpdateDispatcher.notifyAppWidgetChanged(
+                                if (selection.type != WidgetSelectionType.THOSE_DAY_SQUARE) {
+                                    runBlocking {
+                                        WidgetUpdateDispatcher.updateConfiguredWidget(
                                             context = applicationContext,
-                                            receiverClass = ThoseDaySquareWidgetReceiver::class.java,
                                             appWidgetId = appWidgetId,
+                                            selection = selection,
                                         )
+                                        WidgetUpdateDispatcher.refreshAll(applicationContext)
                                     }
-                                    WidgetUpdateDispatcher.updateConfiguredWidget(
-                                        context = applicationContext,
-                                        appWidgetId = appWidgetId,
-                                        selection = selection,
-                                    )
-                                    WidgetUpdateDispatcher.refreshAll(applicationContext)
                                 }
                                 finish()
                             })
