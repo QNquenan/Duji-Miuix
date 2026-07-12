@@ -9,5 +9,4 @@
     android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
-    android:widgetCategory="home_screen"
-    android:configure="com.quenan.duji.widget.ui.MyItemWideWidgetConfigureActivity" />
+    android:widgetCategory="home_screen" />

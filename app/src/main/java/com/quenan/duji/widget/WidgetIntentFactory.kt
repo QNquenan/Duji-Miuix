@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.net.toUri
 import androidx.glance.action.Action
 import androidx.glance.appwidget.action.actionStartActivity
+import com.quenan.duji.MainActivity
 import com.quenan.duji.widget.ui.WidgetEntryActivity
 
 object WidgetIntentFactory {
@@ -22,6 +23,18 @@ object WidgetIntentFactory {
         }
         return actionStartActivity(intent)
     }
+
+    fun myItemsPageAction(context: Context): Action {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            data = "duji://widget/my-items".toUri()
+            putExtra(EXTRA_START_PAGE, 0)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        return actionStartActivity(intent)
+    }
+
+    const val EXTRA_START_PAGE = "extra_start_page"
 }
 
 enum class WidgetTargetType {

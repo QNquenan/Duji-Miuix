@@ -3,6 +3,7 @@ package com.quenan.duji.widget
 import com.quenan.duji.data.day.DayData
 import com.quenan.duji.data.day.computeStatus
 import com.quenan.duji.data.item.ItemData
+import com.quenan.duji.data.item.ItemStats
 import com.quenan.duji.data.item.buildAvgPriceText
 import com.quenan.duji.data.item.buildTotalPriceText
 
@@ -14,6 +15,13 @@ data class ItemWidgetModel(
     val avgPriceText: String,
     val totalPriceText: String,
     val isPinned: Boolean,
+)
+
+data class ItemWideSummaryWidgetModel(
+    val title: String,
+    val totalValueText: String,
+    val itemCountText: String,
+    val totalDailyPriceText: String,
 )
 
 data class DayWidgetModel(
@@ -37,6 +45,13 @@ fun ItemData.toWideWidgetModel(): ItemWidgetModel = ItemWidgetModel(
 )
 
 fun ItemData.toSquareWidgetModel(): ItemWidgetModel = toWideWidgetModel()
+
+fun ItemStats.toWideSummaryWidgetModel(): ItemWideSummaryWidgetModel = ItemWideSummaryWidgetModel(
+    title = "我的物品",
+    totalValueText = "¥$totalValue",
+    itemCountText = itemCount.toString(),
+    totalDailyPriceText = "¥$totalDailyPrice",
+)
 
 fun DayData.toWidgetModel(): DayWidgetModel {
     val status = computeStatus()

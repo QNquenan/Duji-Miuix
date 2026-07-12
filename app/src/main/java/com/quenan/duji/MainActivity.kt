@@ -32,6 +32,7 @@ import com.quenan.duji.ui.screen.MyItemsScreen
 import com.quenan.duji.ui.screen.SettingsScreen
 import com.quenan.duji.ui.screen.ThoseDaysScreen
 import com.quenan.duji.ui.theme.DuJiTheme
+import com.quenan.duji.widget.WidgetIntentFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
@@ -54,7 +55,8 @@ class MainActivity : ComponentActivity() {
                 initial = com.quenan.duji.data.settings.SettingsData()
             )
             val latestVersion = remember { ReleaseNotesRepository.latestVersionName(applicationContext) }
-            val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
+            val startPage = intent?.getIntExtra(WidgetIntentFactory.EXTRA_START_PAGE, 0) ?: 0
+            val pagerState = rememberPagerState(initialPage = startPage, pageCount = { bottomNavItems.size })
             val duJiPagerState = rememberDuJiPagerState(pagerState)
             val noticeHostState = rememberSystemNoticeHostState()
             val coroutineScope = rememberCoroutineScope()
