@@ -156,7 +156,7 @@ fun SettingsScreen() {
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     ArrowPreference(
-                        title = "GitHub",
+                        title = "源代码",
                         summary = "https://github.com/QNquenan/DuJi",
                         onClick = { uriHandler.openUri("https://github.com/QNquenan/DuJi") },
                         startAction = {
@@ -208,7 +208,7 @@ fun SettingsScreen() {
             }
 
             // 底部间距
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
