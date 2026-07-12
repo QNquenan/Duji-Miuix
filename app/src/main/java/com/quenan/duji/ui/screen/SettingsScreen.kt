@@ -163,18 +163,6 @@ fun SettingsScreen(
                             )
                         },
                     )
-                    SwitchPreference(
-                        title = "启用预见式返回手势",
-                        checked = predictiveBackEnabled,
-                        onCheckedChange = onPredictiveBackEnabledChange,
-                        startAction = {
-                            Icon(
-                                imageVector = MiuixIcons.Remove,
-                                modifier = Modifier.padding(end = 6.dp),
-                                contentDescription = "启用预见式返回手势"
-                            )
-                        },
-                    )
                 }
             }
 
