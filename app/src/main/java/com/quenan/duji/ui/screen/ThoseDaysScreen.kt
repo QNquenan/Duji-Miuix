@@ -107,6 +107,7 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 fun ThoseDaysScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
+    openDayId: Long? = null,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     var fabVisible by remember { mutableStateOf(true) }
@@ -200,6 +201,13 @@ fun ThoseDaysScreen(
                     model.day.emoji.contains(normalizedSearchQuery)
             }
         }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(openDayId, dayCardModels) {
+        val targetId = openDayId ?: return@LaunchedEffect
+        val matchedDay = dayCardModels.firstOrNull { it.day.id == targetId }?.day ?: return@LaunchedEffect
+        selectedDayItem = matchedDay
+        showDetailBottomSheet = true
     }
 
     fun resetAddForm() {

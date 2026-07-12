@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -104,6 +105,7 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 fun MyItemsScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
+    openItemId: Long? = null,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     var fabVisible by remember { mutableStateOf(true) }
@@ -172,6 +174,14 @@ fun MyItemsScreen(
             }
         }
     }
+
+    LaunchedEffect(openItemId, itemCardModels) {
+        val targetId = openItemId ?: return@LaunchedEffect
+        val matchedItem = itemCardModels.firstOrNull { it.item.id == targetId }?.item ?: return@LaunchedEffect
+        selectedItem = matchedItem
+        showDetailBottomSheet = true
+    }
+
     fun populateForm(item: ItemData) {
         itemName = item.name
         itemPrice = item.price.toString()

@@ -56,9 +56,8 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .background(ImageProviders.accentBlue)
-                    .cornerRadius(32.dp)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                contentAlignment = Alignment.CenterStart,
+                    .padding(horizontal = 14.dp, vertical = 18.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = model.titlePrefix + model.titleSuffix,
@@ -72,7 +71,7 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
             Column(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 14.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

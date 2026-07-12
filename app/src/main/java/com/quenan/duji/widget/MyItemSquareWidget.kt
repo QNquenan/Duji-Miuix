@@ -84,7 +84,7 @@ private fun SquareItemWidgetContent(model: ItemWidgetModel) {
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                 ),
-                modifier = GlanceModifier.padding(top = 10.dp),
+                modifier = GlanceModifier.padding(top = 18.dp),
             )
             Text(
                 text = model.totalPriceText,

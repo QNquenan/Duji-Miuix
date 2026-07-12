@@ -33,6 +33,7 @@ import com.quenan.duji.ui.screen.SettingsScreen
 import com.quenan.duji.ui.screen.ThoseDaysScreen
 import com.quenan.duji.ui.theme.DuJiTheme
 import com.quenan.duji.widget.WidgetIntentFactory
+import com.quenan.duji.widget.WidgetTargetType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
@@ -56,6 +57,8 @@ class MainActivity : ComponentActivity() {
             )
             val latestVersion = remember { ReleaseNotesRepository.latestVersionName(applicationContext) }
             val startPage = intent?.getIntExtra(WidgetIntentFactory.EXTRA_START_PAGE, 0) ?: 0
+            val startTargetType = intent?.getStringExtra(WidgetIntentFactory.EXTRA_TARGET_TYPE)
+            val startTargetId = intent?.getLongExtra(WidgetIntentFactory.EXTRA_TARGET_ID, -1L) ?: -1L
             val pagerState = rememberPagerState(initialPage = startPage, pageCount = { bottomNavItems.size })
             val duJiPagerState = rememberDuJiPagerState(pagerState)
             val noticeHostState = rememberSystemNoticeHostState()
@@ -98,8 +101,14 @@ class MainActivity : ComponentActivity() {
                             state = pagerState,
                         ) { page ->
                             when (page) {
-                                0 -> MyItemsScreen(contentPadding = PaddingValues(bottom = bottomPadding))
-                                1 -> ThoseDaysScreen(contentPadding = PaddingValues(bottom = bottomPadding))
+                                0 -> MyItemsScreen(
+                                    contentPadding = PaddingValues(bottom = bottomPadding),
+                                    openItemId = if (startTargetType == WidgetTargetType.ITEM.name && startTargetId >= 0) startTargetId else null,
+                                )
+                                1 -> ThoseDaysScreen(
+                                    contentPadding = PaddingValues(bottom = bottomPadding),
+                                    openDayId = if (startTargetType == WidgetTargetType.DAY.name && startTargetId >= 0) startTargetId else null,
+                                )
                                 2 -> SettingsScreen(
                                     versionName = latestVersion,
                                     selectedColorModeIndex = settings.colorModeIndex,
