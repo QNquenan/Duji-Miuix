@@ -1,7 +1,9 @@
 package com.quenan.duji
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
@@ -21,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.quenan.duji.data.ReleaseNotesRepository
 import com.quenan.duji.data.settings.SettingsRepository
 import com.quenan.duji.ui.component.LocalSystemNotice
 import com.quenan.duji.ui.component.SystemNoticeHost
@@ -50,13 +53,21 @@ class MainActivity : ComponentActivity() {
             val settings by settingsRepository.observeSettings().collectAsState(
                 initial = com.quenan.duji.data.settings.SettingsData()
             )
-            val latestVersion = remember { loadLatestVersion() }
+            val latestVersion = remember { ReleaseNotesRepository.latestVersionName(applicationContext) }
             val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
             val duJiPagerState = rememberDuJiPagerState(pagerState)
             val noticeHostState = rememberSystemNoticeHostState()
             val coroutineScope = rememberCoroutineScope()
 
             DuJiTheme(colorModeIndex = settings.colorModeIndex) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    PredictiveBackHandler(enabled = settings.predictiveBackEnabled) {
+                        if (duJiPagerState.handleBack()) {
+                            return@PredictiveBackHandler
+                        }
+                        finish()
+                    }
+                }
                 val settledPage = pagerState.settledPage
                 LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
                 val currentPage = pagerState.currentPage
@@ -111,13 +122,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun loadLatestVersion(): String {
-        val raw = assets.open("release_notes.json").bufferedReader().use { it.readText() }
-        return runCatching {
-            val array = org.json.JSONArray(raw)
-            array.optJSONObject(0)?.optString("title").takeUnless { it.isNullOrBlank() } ?: "未知版本"
-        }.getOrDefault("未知版本")
-    }
 }
 
 private data class BottomNavItem(
@@ -177,6 +181,12 @@ class DuJiPagerState(
         if (!isNavigating && selectedPage != pagerState.currentPage) {
             selectedPage = pagerState.currentPage
         }
+    }
+
+    fun handleBack(): Boolean {
+        if (selectedPage == 0) return false
+        animateToPage(0)
+        return true
     }
 }
 

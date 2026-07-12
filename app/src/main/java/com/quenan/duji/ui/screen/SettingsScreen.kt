@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.quenan.duji.ReleaseNotesActivity
+import com.quenan.duji.data.backup.APP_BACKUP_VERSION
 import com.quenan.duji.data.backup.AppBackup
 import com.quenan.duji.data.backup.parseAppBackup
 import com.quenan.duji.data.backup.toJsonString
@@ -86,7 +87,7 @@ fun SettingsScreen(
         coroutineScope.launch {
             runCatching {
                 val backup = AppBackup(
-                    version = 1,
+                    version = APP_BACKUP_VERSION,
                     items = itemRepository.getAllItems(),
                     days = dayRepository.getAllDays(),
                 )
@@ -97,7 +98,7 @@ fun SettingsScreen(
                 } ?: error("无法打开导出位置")
                 Triple(backup.items.size, backup.days.size, exportFileName)
             }.onSuccess { (itemCount, dayCount, fileName) ->
-                showNotice("导出成功：${fileName}（物品 ${itemCount} 条，日子 ${dayCount} 条）")
+                showNotice("导出成功：${fileName}（备份 v${APP_BACKUP_VERSION}，物品 ${itemCount} 条，日子 ${dayCount} 条）")
             }.onFailure { throwable ->
                 showNotice("导出失败：${throwable.message ?: "未知错误"}")
             }
@@ -115,9 +116,9 @@ fun SettingsScreen(
                 val backup = parseAppBackup(raw)
                 itemRepository.importItems(backup.items)
                 dayRepository.importDays(backup.days)
-                backup.items.size to backup.days.size
-            }.onSuccess { (itemCount, dayCount) ->
-                showNotice("导入成功：物品 ${itemCount} 条，日子 ${dayCount} 条")
+                Triple(backup.version, backup.items.size, backup.days.size)
+            }.onSuccess { (backupVersion, itemCount, dayCount) ->
+                showNotice("导入成功：备份 v${backupVersion}，物品 ${itemCount} 条，日子 ${dayCount} 条")
             }.onFailure { throwable ->
                 showNotice("导入失败：${throwable.message ?: "未知错误"}")
             }

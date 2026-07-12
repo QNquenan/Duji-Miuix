@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -36,12 +37,19 @@ class SystemNoticeHostState {
     private var hideJob: Job? = null
 
     fun show(scope: kotlinx.coroutines.CoroutineScope, message: String, durationMillis: Long = 2000L) {
-        hideJob?.cancel()
+        hide()
         currentMessage = message
         hideJob = scope.launch {
             delay(durationMillis)
             currentMessage = null
+            hideJob = null
         }
+    }
+
+    fun hide() {
+        hideJob?.cancel()
+        hideJob = null
+        currentMessage = null
     }
 }
 
@@ -109,6 +117,9 @@ fun SystemNoticeHost(
 fun rememberNoticeAction(): (String) -> Unit {
     val hostState = LocalSystemNotice.current
     val scope = rememberCoroutineScope()
+    DisposableEffect(hostState) {
+        onDispose { hostState.hide() }
+    }
     return remember(hostState, scope) {
         { message -> hostState.show(scope, message) }
     }

@@ -21,8 +21,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.quenan.duji.data.ReleaseNoteEntry
+import com.quenan.duji.data.ReleaseNotesRepository
 import com.quenan.duji.ui.theme.DuJiTheme
-import org.json.JSONArray
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -36,12 +37,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private data class ReleaseNoteEntry(
-    val date: String,
-    val title: String,
-    val items: List<String>,
-)
-
 class ReleaseNotesActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,7 +45,7 @@ class ReleaseNotesActivity : ComponentActivity() {
         setContent {
             DuJiTheme {
                 val scrollBehavior = MiuixScrollBehavior()
-                val releaseNotes = remember { loadReleaseNotes() }
+                val releaseNotes = remember { ReleaseNotesRepository.load(applicationContext) }
 
                 Scaffold(
                     topBar = {
@@ -119,29 +114,6 @@ class ReleaseNotesActivity : ComponentActivity() {
         }
     }
 
-    private fun loadReleaseNotes(): List<ReleaseNoteEntry> {
-        val raw = assets.open("release_notes.json").bufferedReader().use { it.readText() }
-        return runCatching {
-            val array = JSONArray(raw)
-            buildList(array.length()) {
-                for (index in 0 until array.length()) {
-                    val obj = array.getJSONObject(index)
-                    val itemsArray = obj.optJSONArray("items") ?: JSONArray()
-                    add(
-                        ReleaseNoteEntry(
-                            date = obj.optString("date"),
-                            title = obj.optString("title"),
-                            items = buildList(itemsArray.length()) {
-                                for (itemIndex in 0 until itemsArray.length()) {
-                                    add(itemsArray.optString(itemIndex))
-                                }
-                            },
-                        )
-                    )
-                }
-            }
-        }.getOrDefault(emptyList())
-    }
 
     private fun itemColor(item: String): Color {
         return when {
