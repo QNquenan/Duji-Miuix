@@ -9,6 +9,8 @@ import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -43,7 +45,9 @@ private fun SquareItemWidgetContent(model: ItemWidgetModel) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
+            .appWidgetBackground()
             .background(ImageProviders.surfaceBackground)
+            .cornerRadius(32.dp)
             .clickable(WidgetIntentFactory.detailAction(context, WidgetTargetType.ITEM, model.id))
             .padding(14.dp),
     ) {
@@ -51,7 +55,8 @@ private fun SquareItemWidgetContent(model: ItemWidgetModel) {
             Box(
                 modifier = GlanceModifier
                     .size(44.dp)
-                    .background(ImageProviders.secondaryContainer),
+                    .background(ImageProviders.secondaryContainer)
+                    .cornerRadius(32.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(text = model.icon, style = TextStyle(fontSize = 22.sp))

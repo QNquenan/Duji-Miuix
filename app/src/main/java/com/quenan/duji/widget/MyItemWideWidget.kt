@@ -8,6 +8,8 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -38,7 +40,9 @@ private fun WideSummaryWidgetContent(model: ItemWideSummaryWidgetModel) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
+            .appWidgetBackground()
             .background(ColorProvider(R.color.widget_black_surface))
+            .cornerRadius(32.dp)
             .clickable(WidgetIntentFactory.myItemsPageAction(context))
             .padding(20.dp),
     ) {

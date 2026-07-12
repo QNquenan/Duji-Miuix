@@ -9,6 +9,8 @@ import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -44,7 +46,9 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
+            .appWidgetBackground()
             .background(ImageProviders.surfaceBackground)
+            .cornerRadius(32.dp)
             .clickable(WidgetIntentFactory.detailAction(context, WidgetTargetType.DAY, model.id)),
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -52,6 +56,7 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .background(ImageProviders.accentBlue)
+                    .cornerRadius(32.dp)
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 contentAlignment = Alignment.CenterStart,
             ) {
