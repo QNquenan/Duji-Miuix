@@ -19,6 +19,14 @@ object WidgetUpdateDispatcher {
         )
     }
 
+    fun notifyAppWidgetChanged(context: Context, receiverClass: Class<*>, appWidgetId: Int) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val componentName = ComponentName(context, receiverClass)
+        if (appWidgetManager.getAppWidgetIds(componentName).contains(appWidgetId)) {
+            appWidgetManager.updateAppWidgetOptions(appWidgetId, appWidgetManager.getAppWidgetOptions(appWidgetId))
+        }
+    }
+
     suspend fun updateConfiguredWidget(context: Context, appWidgetId: Int, selection: WidgetSelection) {
         val manager = GlanceAppWidgetManager(context)
         val targetGlanceId = manager.getGlanceIdBy(appWidgetId)
