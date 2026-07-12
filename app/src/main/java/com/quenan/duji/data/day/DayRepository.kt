@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.quenan.duji.widget.refreshWidgetsAsync
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -14,7 +15,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class DayRepository(context: Context) {
-    private val dataStore: DataStore<Preferences> = getDataStore(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val dataStore: DataStore<Preferences> = getDataStore(appContext)
 
     fun observeDays(): Flow<List<DayData>> = dataStore.data.map { preferences ->
         decodeDays(preferences[DAYS_KEY].orEmpty())
@@ -27,6 +29,7 @@ class DayRepository(context: Context) {
             days.add(day.copy(id = nextId, createdAt = System.currentTimeMillis()))
             preferences[DAYS_KEY] = encodeDays(days)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     suspend fun updateDay(day: DayData) {
@@ -36,6 +39,7 @@ class DayRepository(context: Context) {
             }
             preferences[DAYS_KEY] = encodeDays(updated)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     suspend fun deleteDay(day: DayData) {
@@ -44,6 +48,7 @@ class DayRepository(context: Context) {
                 .filterNot { current -> current.id == day.id }
             preferences[DAYS_KEY] = encodeDays(filtered)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     suspend fun getAllDays(): List<DayData> = dataStore.data.map { preferences ->
@@ -60,6 +65,7 @@ class DayRepository(context: Context) {
             }
             preferences[DAYS_KEY] = encodeDays(mergedDays)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     private fun decodeDays(raw: String): List<DayData> {

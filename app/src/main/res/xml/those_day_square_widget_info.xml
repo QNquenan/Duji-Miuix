@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_those_day_square_description"
+    android:initialLayout="@android:layout/simple_list_item_1"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:previewLayout="@android:layout/simple_list_item_1"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:configure="com.quenan.duji.widget.ui.ThoseDaySquareWidgetConfigureActivity" />

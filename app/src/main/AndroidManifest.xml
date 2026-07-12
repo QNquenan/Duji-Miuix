@@ -18,6 +18,55 @@
             android:exported="false" />
 
         <activity
+            android:name=".widget.ui.WidgetEntryActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".widget.ui.MyItemWideWidgetConfigureActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".widget.ui.MyItemSquareWidgetConfigureActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".widget.ui.ThoseDaySquareWidgetConfigureActivity"
+            android:exported="false" />
+
+        <receiver
+            android:name=".widget.MyItemWideWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/my_item_wide_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MyItemSquareWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/my_item_square_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.ThoseDaySquareWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/those_day_square_widget_info" />
+        </receiver>
+
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.quenan.duji.widget.refreshWidgetsAsync
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -14,7 +15,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class ItemRepository(context: Context) {
-    private val dataStore: DataStore<Preferences> = getDataStore(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val dataStore: DataStore<Preferences> = getDataStore(appContext)
 
     fun observeItems(): Flow<List<ItemData>> = dataStore.data.map { preferences ->
         decodeItems(preferences[ITEMS_KEY].orEmpty())
@@ -27,6 +29,7 @@ class ItemRepository(context: Context) {
             items.add(item.copy(id = nextId, createdAt = System.currentTimeMillis()))
             preferences[ITEMS_KEY] = encodeItems(items)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     suspend fun updateItem(item: ItemData) {
@@ -36,6 +39,7 @@ class ItemRepository(context: Context) {
             }
             preferences[ITEMS_KEY] = encodeItems(updatedItems)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     suspend fun deleteItem(item: ItemData) {
@@ -44,6 +48,7 @@ class ItemRepository(context: Context) {
                 .filterNot { current -> current.id == item.id }
             preferences[ITEMS_KEY] = encodeItems(filteredItems)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     suspend fun getAllItems(): List<ItemData> = dataStore.data.map { preferences ->
@@ -60,6 +65,7 @@ class ItemRepository(context: Context) {
             }
             preferences[ITEMS_KEY] = encodeItems(mergedItems)
         }
+        appContext.refreshWidgetsAsync()
     }
 
     private fun decodeItems(raw: String): List<ItemData> {

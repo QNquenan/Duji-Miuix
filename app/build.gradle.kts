@@ -11,8 +11,8 @@ android {
         applicationId = "com.quenan.duji"
         minSdk = 33
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.9.1"
+        versionCode = 5
+        versionName = "0.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -50,6 +50,8 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.datastore.preferences)
     implementation(libs.lunar)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
     debugImplementation(libs.compose.ui.tooling)
 
     // Miuix —— 全量导入
