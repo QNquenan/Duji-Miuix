@@ -14,9 +14,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class DayRepository(context: Context) {
-    private val dataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        produceFile = { context.preferencesDataStoreFile("days.preferences_pb") }
-    )
+    private val dataStore: DataStore<Preferences> = getDataStore(context.applicationContext)
 
     fun observeDays(): Flow<List<DayData>> = dataStore.data.map { preferences ->
         decodeDays(preferences[DAYS_KEY].orEmpty())
@@ -123,5 +121,16 @@ class DayRepository(context: Context) {
 
     private companion object {
         val DAYS_KEY = stringPreferencesKey("days_json")
+
+        @Volatile
+        private var dataStoreInstance: DataStore<Preferences>? = null
+
+        fun getDataStore(context: Context): DataStore<Preferences> {
+            return dataStoreInstance ?: synchronized(this) {
+                dataStoreInstance ?: PreferenceDataStoreFactory.create(
+                    produceFile = { context.preferencesDataStoreFile("days.preferences_pb") }
+                ).also { dataStoreInstance = it }
+            }
+        }
     }
 }

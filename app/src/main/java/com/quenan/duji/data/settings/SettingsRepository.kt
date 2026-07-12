@@ -21,9 +21,7 @@ data class SettingsData(
 )
 
 class SettingsRepository(context: Context) {
-    private val dataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        produceFile = { context.preferencesDataStoreFile("settings.preferences_pb") }
-    )
+    private val dataStore: DataStore<Preferences> = getDataStore(context.applicationContext)
 
     fun observeSettings(): Flow<SettingsData> = dataStore.data.map { preferences ->
         SettingsData(
@@ -47,5 +45,16 @@ class SettingsRepository(context: Context) {
     private companion object {
         val COLOR_MODE_KEY = intPreferencesKey("color_mode")
         val PREDICTIVE_BACK_KEY = booleanPreferencesKey("predictive_back_enabled")
+
+        @Volatile
+        private var dataStoreInstance: DataStore<Preferences>? = null
+
+        fun getDataStore(context: Context): DataStore<Preferences> {
+            return dataStoreInstance ?: synchronized(this) {
+                dataStoreInstance ?: PreferenceDataStoreFactory.create(
+                    produceFile = { context.preferencesDataStoreFile("settings.preferences_pb") }
+                ).also { dataStoreInstance = it }
+            }
+        }
     }
 }

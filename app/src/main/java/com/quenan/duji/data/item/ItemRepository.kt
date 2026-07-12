@@ -2,11 +2,11 @@ package com.quenan.duji.data.item
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -14,9 +14,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class ItemRepository(context: Context) {
-    private val dataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        produceFile = { context.preferencesDataStoreFile("items.preferences_pb") }
-    )
+    private val dataStore: DataStore<Preferences> = getDataStore(context.applicationContext)
 
     fun observeItems(): Flow<List<ItemData>> = dataStore.data.map { preferences ->
         decodeItems(preferences[ITEMS_KEY].orEmpty())
@@ -115,5 +113,16 @@ class ItemRepository(context: Context) {
 
     private companion object {
         val ITEMS_KEY = stringPreferencesKey("items_json")
+
+        @Volatile
+        private var dataStoreInstance: DataStore<Preferences>? = null
+
+        fun getDataStore(context: Context): DataStore<Preferences> {
+            return dataStoreInstance ?: synchronized(this) {
+                dataStoreInstance ?: PreferenceDataStoreFactory.create(
+                    produceFile = { context.preferencesDataStoreFile("items.preferences_pb") }
+                ).also { dataStoreInstance = it }
+            }
+        }
     }
 }

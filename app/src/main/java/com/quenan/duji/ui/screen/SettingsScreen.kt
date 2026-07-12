@@ -26,6 +26,7 @@ import com.quenan.duji.data.backup.AppBackup
 import com.quenan.duji.data.backup.parseAppBackup
 import com.quenan.duji.data.backup.toJsonString
 import com.quenan.duji.data.day.DayRepository
+import com.quenan.duji.data.item.ItemRepository
 import com.quenan.duji.ui.component.rememberNoticeAction
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -49,6 +50,9 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun SettingsScreen(
@@ -65,8 +69,15 @@ fun SettingsScreen(
     val showNotice = rememberNoticeAction()
     val colorModeOptions = remember { listOf("跟随系统", "浅色", "深色") }
     val coroutineScope = rememberCoroutineScope()
-    val itemRepository = remember(appContext) { com.quenan.duji.data.item.ItemRepository(appContext) }
+    val itemRepository = remember(appContext) { ItemRepository(appContext) }
     val dayRepository = remember(appContext) { DayRepository(appContext) }
+    val timestamp = remember {
+        SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.getDefault()).format(Date())
+    }
+    val exportFileName = remember(versionName, timestamp) {
+        val safeVersion = versionName.replace('/', '-').replace(':', '-')
+        "DuJi_${safeVersion}_${timestamp}.json"
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -84,9 +95,9 @@ fun SettingsScreen(
                     outputStream.write(json.toByteArray(StandardCharsets.UTF_8))
                     outputStream.flush()
                 } ?: error("无法打开导出位置")
-                backup.items.size to backup.days.size
-            }.onSuccess { (itemCount, dayCount) ->
-                showNotice("导出成功：物品 ${itemCount} 条，日子 ${dayCount} 条")
+                Triple(backup.items.size, backup.days.size, exportFileName)
+            }.onSuccess { (itemCount, dayCount, fileName) ->
+                showNotice("导出成功：${fileName}（物品 ${itemCount} 条，日子 ${dayCount} 条）")
             }.onFailure { throwable ->
                 showNotice("导出失败：${throwable.message ?: "未知错误"}")
             }
@@ -176,7 +187,7 @@ fun SettingsScreen(
                     ArrowPreference(
                         title = "导出",
                         summary = "导出 JSON 到本地",
-                        onClick = { exportLauncher.launch("DuJi_backup.json") },
+                        onClick = { exportLauncher.launch(exportFileName) },
                         startAction = {
                             Icon(
                                 imageVector = MiuixIcons.MoveFile,
