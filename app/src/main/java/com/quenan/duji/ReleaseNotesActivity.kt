@@ -64,11 +64,9 @@ class ReleaseNotesActivity : ComponentActivity() {
                                     )
                                 }
                             },
-                            color = Color.Transparent,
                             scrollBehavior = scrollBehavior,
                         )
                     },
-                    color = Color.Transparent,
                 ) { innerPadding ->
                     Column(
                         modifier = Modifier
@@ -153,7 +151,7 @@ class ReleaseNotesActivity : ComponentActivity() {
             item.startsWith("style:") -> Color(0xFFC084FC)
             item.startsWith("docs:") -> Color(0xFF9CA3AF)
             item.startsWith("refactor:") || item.startsWith("refactor(ui):") -> Color(0xFFF6C453)
-            else -> MiuixTheme.colorScheme.onBackgroundVariant
+            else -> Color(0xFFB0B7C3)
         }
     }
 }
