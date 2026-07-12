@@ -59,16 +59,17 @@ fun DayData.toWidgetModel(): DayWidgetModel {
     val suffix = when {
         rawStatus.startsWith("已经") -> "已经"
         rawStatus.startsWith("还有") -> "还有"
-        rawStatus.startsWith("就是今天") -> "今天"
+        rawStatus.startsWith("就是今天") -> ""
         else -> rawStatus
     }
     val number = when {
         rawStatus.startsWith("已经") -> rawStatus.removePrefix("已经").removeSuffix("天").removeSuffix("周年")
         rawStatus.startsWith("还有") -> rawStatus.removePrefix("还有").removeSuffix("天").removeSuffix("周年")
-        rawStatus.startsWith("就是今天") -> "0"
+        rawStatus.startsWith("就是今天") -> "就是今天"
         else -> status.diff.toString()
     }.ifBlank { "0" }
     val unit = when {
+        rawStatus.startsWith("就是今天") -> ""
         rawStatus.contains("周年") -> "周年"
         else -> "天"
     }

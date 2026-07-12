@@ -17,6 +17,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
@@ -56,7 +57,7 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .background(ImageProviders.accentBlue)
-                    .padding(horizontal = 14.dp, vertical = 18.dp),
+                    .padding(horizontal = 14.dp, vertical = 14.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -71,11 +72,15 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
             Column(
                 modifier = GlanceModifier
                     .fillMaxWidth()
+                    .fillMaxHeight()
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.Bottom) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Text(
                         text = model.numberText,
                         style = TextStyle(
@@ -84,14 +89,16 @@ private fun DaySquareWidgetContent(model: DayWidgetModel) {
                             fontWeight = FontWeight.Bold,
                         )
                     )
-                    Text(
-                        text = model.unitText,
-                        style = TextStyle(
-                            color = ColorProvider(R.color.widget_text_primary),
-                            fontSize = 14.sp,
-                        ),
-                        modifier = GlanceModifier.padding(start = 4.dp, bottom = 4.dp),
-                    )
+                    if (model.unitText.isNotBlank()) {
+                        Text(
+                            text = model.unitText,
+                            style = TextStyle(
+                                color = ColorProvider(R.color.widget_text_primary),
+                                fontSize = 14.sp,
+                            ),
+                            modifier = GlanceModifier.padding(start = 4.dp),
+                        )
+                    }
                 }
                 Text(
                     text = model.dateText,
