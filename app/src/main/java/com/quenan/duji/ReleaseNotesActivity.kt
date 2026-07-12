@@ -86,7 +86,6 @@ class ReleaseNotesActivity : ComponentActivity() {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(0.dp),
-                                colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surface),
                             ) {
                                 Column(
                                     modifier = Modifier

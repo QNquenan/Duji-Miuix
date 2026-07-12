@@ -7,22 +7,21 @@ import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.quenan.duji.data.settings.SettingsRepository
 import com.quenan.duji.ui.component.LocalSystemNotice
 import com.quenan.duji.ui.component.SystemNoticeHost
 import com.quenan.duji.ui.component.rememberSystemNoticeHostState
@@ -46,12 +45,18 @@ import kotlin.math.abs
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val settingsRepository = SettingsRepository(applicationContext)
         setContent {
-            DuJiTheme {
-                val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
-                val duJiPagerState = rememberDuJiPagerState(pagerState)
-                val noticeHostState = rememberSystemNoticeHostState()
+            val settings by settingsRepository.observeSettings().collectAsState(
+                initial = com.quenan.duji.data.settings.SettingsData()
+            )
+            val latestVersion = remember { loadLatestVersion() }
+            val pagerState = rememberPagerState(pageCount = { bottomNavItems.size })
+            val duJiPagerState = rememberDuJiPagerState(pagerState)
+            val noticeHostState = rememberSystemNoticeHostState()
+            val coroutineScope = rememberCoroutineScope()
 
+            DuJiTheme(colorModeIndex = settings.colorModeIndex) {
                 val settledPage = pagerState.settledPage
                 LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
                 val currentPage = pagerState.currentPage
@@ -63,7 +68,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBar {
                                 bottomNavItems.forEachIndexed { index, item ->
                                     NavigationBarItem(
-                                        modifier = Modifier.weight(1f),
+                                        modifier = androidx.compose.ui.Modifier.weight(1f),
                                         icon = item.icon,
                                         label = item.label,
                                         selected = duJiPagerState.selectedPage == index,
@@ -82,7 +87,21 @@ class MainActivity : ComponentActivity() {
                             when (page) {
                                 0 -> MyItemsScreen(contentPadding = PaddingValues(bottom = bottomPadding))
                                 1 -> ThoseDaysScreen(contentPadding = PaddingValues(bottom = bottomPadding))
-                                2 -> SettingsScreen()
+                                2 -> SettingsScreen(
+                                    versionName = latestVersion,
+                                    selectedColorModeIndex = settings.colorModeIndex,
+                                    predictiveBackEnabled = settings.predictiveBackEnabled,
+                                    onSelectedColorModeChange = { newIndex ->
+                                        coroutineScope.launch {
+                                            settingsRepository.updateColorMode(newIndex)
+                                        }
+                                    },
+                                    onPredictiveBackEnabledChange = { enabled ->
+                                        coroutineScope.launch {
+                                            settingsRepository.updatePredictiveBackEnabled(enabled)
+                                        }
+                                    },
+                                )
                             }
                         }
                         SystemNoticeHost(hostState = noticeHostState)
@@ -91,11 +110,19 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun loadLatestVersion(): String {
+        val raw = assets.open("release_notes.json").bufferedReader().use { it.readText() }
+        return runCatching {
+            val array = org.json.JSONArray(raw)
+            array.optJSONObject(0)?.optString("title").takeUnless { it.isNullOrBlank() } ?: "未知版本"
+        }.getOrDefault("未知版本")
+    }
 }
 
 private data class BottomNavItem(
     val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val icon: ImageVector,
 )
 
 private val bottomNavItems = listOf(
@@ -104,9 +131,6 @@ private val bottomNavItems = listOf(
     BottomNavItem("设置", MiuixIcons.Settings),
 )
 
-// ═══════════════════════════════════════════
-//  页面状态管理（来自 KernelSU MainPagerState）
-// ═══════════════════════════════════════════
 class DuJiPagerState(
     val pagerState: PagerState,
     private val coroutineScope: CoroutineScope

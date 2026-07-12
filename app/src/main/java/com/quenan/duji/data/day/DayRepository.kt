@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
@@ -44,6 +45,22 @@ class DayRepository(context: Context) {
             val filtered = decodeDays(preferences[DAYS_KEY].orEmpty())
                 .filterNot { current -> current.id == day.id }
             preferences[DAYS_KEY] = encodeDays(filtered)
+        }
+    }
+
+    suspend fun getAllDays(): List<DayData> = dataStore.data.map { preferences ->
+        decodeDays(preferences[DAYS_KEY].orEmpty())
+    }.first()
+
+    suspend fun importDays(importedDays: List<DayData>) {
+        dataStore.edit { preferences ->
+            val currentDays = decodeDays(preferences[DAYS_KEY].orEmpty())
+            val nextIdStart = (currentDays.maxOfOrNull(DayData::id) ?: 0L) + 1L
+            val mergedDays = currentDays.toMutableList()
+            importedDays.forEachIndexed { index, day ->
+                mergedDays.add(day.copy(id = nextIdStart + index))
+            }
+            preferences[DAYS_KEY] = encodeDays(mergedDays)
         }
     }
 

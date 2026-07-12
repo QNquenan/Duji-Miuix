@@ -1,6 +1,8 @@
 package com.quenan.duji.ui.screen
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,26 +11,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.quenan.duji.ReleaseNotesActivity
+import com.quenan.duji.data.backup.AppBackup
+import com.quenan.duji.data.backup.parseAppBackup
+import com.quenan.duji.data.backup.toJsonString
+import com.quenan.duji.data.day.DayRepository
+import com.quenan.duji.data.settings.SettingsRepository
 import com.quenan.duji.ui.component.rememberNoticeAction
-import top.yukonga.miuix.kmp.preference.ArrowPreference
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -36,32 +40,76 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.MoveFile
-import top.yukonga.miuix.kmp.icon.extended.Remove
-import top.yukonga.miuix.kmp.icon.extended.Forward
-import top.yukonga.miuix.kmp.icon.extended.Link
-import top.yukonga.miuix.kmp.icon.extended.NotesFill
-import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Background
+import top.yukonga.miuix.kmp.icon.extended.Forward
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.MoveFile
+import top.yukonga.miuix.kmp.icon.extended.NotesFill
+import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Reset
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    versionName: String,
+    selectedColorModeIndex: Int,
+    predictiveBackEnabled: Boolean,
+    onSelectedColorModeChange: (Int) -> Unit,
+    onPredictiveBackEnabledChange: (Boolean) -> Unit,
+) {
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
+    val appContext = context.applicationContext
     val uriHandler = LocalUriHandler.current
     val showNotice = rememberNoticeAction()
     val colorModeOptions = remember { listOf("跟随系统", "浅色", "深色") }
-    val versionName = remember(context) {
-        runCatching {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "未知版本"
-        }.getOrDefault("未知版本")
+    val coroutineScope = rememberCoroutineScope()
+    val itemRepository = remember(appContext) { com.quenan.duji.data.item.ItemRepository(appContext) }
+    val dayRepository = remember(appContext) { DayRepository(appContext) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        coroutineScope.launch {
+            runCatching {
+                val backup = AppBackup(
+                    version = 1,
+                    items = itemRepository.getAllItems(),
+                    days = dayRepository.getAllDays(),
+                )
+                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
+                    writer.write(backup.toJsonString())
+                } ?: error("无法打开导出位置")
+            }.onSuccess {
+                showNotice("导出成功")
+            }.onFailure {
+                showNotice("导出失败")
+            }
+        }
     }
-    var selectedColorModeIndex by remember { mutableIntStateOf(0) }
-    var predictiveBackEnabled by remember { mutableStateOf(true) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        coroutineScope.launch {
+            runCatching {
+                val raw = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: error("无法读取导入文件")
+                val backup = parseAppBackup(raw)
+                itemRepository.importItems(backup.items)
+                dayRepository.importDays(backup.days)
+            }.onSuccess {
+                showNotice("导入成功")
+            }.onFailure {
+                showNotice("导入失败")
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -91,7 +139,7 @@ fun SettingsScreen() {
                         title = "颜色模式",
                         items = colorModeOptions,
                         selectedIndex = selectedColorModeIndex,
-                        onSelectedIndexChange = { selectedColorModeIndex = it },
+                        onSelectedIndexChange = onSelectedColorModeChange,
                         insideMargin = PaddingValues(horizontal = 16.dp),
                         startAction = {
                             Icon(
@@ -104,7 +152,7 @@ fun SettingsScreen() {
                     SwitchPreference(
                         title = "启用预见式返回手势",
                         checked = predictiveBackEnabled,
-                        onCheckedChange = { predictiveBackEnabled = it },
+                        onCheckedChange = onPredictiveBackEnabledChange,
                         startAction = {
                             Icon(
                                 imageVector = MiuixIcons.Remove,
@@ -125,7 +173,8 @@ fun SettingsScreen() {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     ArrowPreference(
                         title = "导出",
-                        onClick = { showNotice("导出暂未实现") },
+                        summary = "导出 JSON 到本地",
+                        onClick = { exportLauncher.launch("DuJi_backup.json") },
                         startAction = {
                             Icon(
                                 imageVector = MiuixIcons.MoveFile,
@@ -136,7 +185,8 @@ fun SettingsScreen() {
                     )
                     ArrowPreference(
                         title = "导入",
-                        onClick = { showNotice("导入暂未实现") },
+                        summary = "从本地选择 JSON 合并导入",
+                        onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
                         startAction = {
                             Icon(
                                 imageVector = MiuixIcons.Reset,
@@ -207,7 +257,6 @@ fun SettingsScreen() {
                 }
             }
 
-            // 底部间距
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

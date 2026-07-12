@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
@@ -44,6 +45,22 @@ class ItemRepository(context: Context) {
             val filteredItems = decodeItems(preferences[ITEMS_KEY].orEmpty())
                 .filterNot { current -> current.id == item.id }
             preferences[ITEMS_KEY] = encodeItems(filteredItems)
+        }
+    }
+
+    suspend fun getAllItems(): List<ItemData> = dataStore.data.map { preferences ->
+        decodeItems(preferences[ITEMS_KEY].orEmpty())
+    }.first()
+
+    suspend fun importItems(importedItems: List<ItemData>) {
+        dataStore.edit { preferences ->
+            val currentItems = decodeItems(preferences[ITEMS_KEY].orEmpty())
+            val nextIdStart = (currentItems.maxOfOrNull(ItemData::id) ?: 0L) + 1L
+            val mergedItems = currentItems.toMutableList()
+            importedItems.forEachIndexed { index, item ->
+                mergedItems.add(item.copy(id = nextIdStart + index))
+            }
+            preferences[ITEMS_KEY] = encodeItems(mergedItems)
         }
     }
 
