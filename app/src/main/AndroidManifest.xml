@@ -27,7 +27,8 @@
 
         <receiver
             android:name=".widget.MyItemWideWidgetReceiver"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/widget_my_item_wide_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -38,7 +39,8 @@
 
         <receiver
             android:name=".widget.MyItemSquareWidgetReceiver"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/widget_my_item_square_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -49,7 +51,8 @@
 
         <receiver
             android:name=".widget.ThoseDaySquareWidgetReceiver"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/widget_those_day_square_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
