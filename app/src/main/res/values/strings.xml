@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">DuJi</string>
+    <string name="widget_my_item_wide_label">我的物品（宽版）</string>
+    <string name="widget_my_item_square_label">我的物品（方形）</string>
+    <string name="widget_those_day_square_label">那些日子</string>
     <string name="widget_my_item_wide_description">我的物品 2x4 小部件</string>
     <string name="widget_my_item_square_description">我的物品 2x2 小部件</string>
     <string name="widget_those_day_square_description">那些日子 2x2 小部件</string>

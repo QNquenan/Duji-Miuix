@@ -3,6 +3,7 @@
     "date": "2026-07-13",
     "title": "v0.10.13",
     "items": [
+      "style: 为三个小部件添加名称。",
       "fix: 统一由小组件 receiver 异步执行 Glance 实例更新。",
       "fix: 修复所有小组件配置完成后桌面不立即同步的问题。",
       "debug: 增加 receiver 直接更新链路日志。"

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:label="@string/widget_my_item_wide_label"
     android:description="@string/widget_my_item_wide_description"
     android:initialLayout="@layout/my_item_wide_widget_layout"
     android:minWidth="250dp"
