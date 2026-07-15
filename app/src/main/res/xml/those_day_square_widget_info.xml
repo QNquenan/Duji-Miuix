@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_those_day_square_description"
-    android:initialLayout="@layout/those_day_square_widget_layout"
+    android:initialLayout="@layout/those_day_square_widget_empty_layout"
     android:minWidth="110dp"
     android:minHeight="110dp"
     android:previewLayout="@layout/those_day_square_widget_layout"

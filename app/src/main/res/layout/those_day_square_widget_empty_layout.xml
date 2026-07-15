@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_day_root"
+    android:layout_width="match_parent"
+    android:layout_height="160dp"
+    android:background="@drawable/widget_surface_bg"
+    android:clipToOutline="true"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/widget_day_empty_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="那些日子"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_day_empty_summary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="点击进入应用重新选择日子"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="14sp" />
+</LinearLayout>

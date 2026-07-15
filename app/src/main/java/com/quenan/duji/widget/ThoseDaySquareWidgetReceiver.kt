@@ -3,6 +3,7 @@ package com.quenan.duji.widget
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.view.View
 import android.widget.RemoteViews
 import com.quenan.duji.R
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,6 @@ class ThoseDaySquareWidgetReceiver : AppWidgetProvider() {
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
         ) {
-            val views = RemoteViews(context.packageName, R.layout.those_day_square_widget_layout)
             val model = runCatching {
                 runBlocking(Dispatchers.IO) {
                     WidgetDataProvider(context).loadSquareDay(appWidgetId, context)
@@ -38,15 +38,23 @@ class ThoseDaySquareWidgetReceiver : AppWidgetProvider() {
             }.getOrNull()
 
             if (model == null) {
-                views.setTextViewText(R.id.widget_day_title, "那些日子")
-                views.setTextViewText(R.id.widget_day_number, "--")
-                views.setTextViewText(R.id.widget_day_unit, "")
-                views.setTextViewText(R.id.widget_day_date, "请点击配置")
+                val views = RemoteViews(
+                    context.packageName,
+                    R.layout.those_day_square_widget_empty_layout,
+                )
+                views.setTextViewText(R.id.widget_day_empty_title, "那些日子")
+                views.setTextViewText(R.id.widget_day_empty_summary, "点击进入应用重新选择日子")
+                appWidgetManager.updateAppWidget(appWidgetId, views)
             } else {
+                val views = RemoteViews(context.packageName, R.layout.those_day_square_widget_layout)
                 views.setTextViewText(R.id.widget_day_title, model.titlePrefix + model.titleSuffix)
                 views.setTextViewText(R.id.widget_day_number, model.numberText)
                 views.setTextViewText(R.id.widget_day_unit, model.unitText)
                 views.setTextViewText(R.id.widget_day_date, model.dateText)
+                views.setViewVisibility(
+                    R.id.widget_day_unit,
+                    if (model.unitText.isBlank()) View.GONE else View.VISIBLE,
+                )
                 WidgetRemoteViews.setClick(
                     context = context,
                     views = views,
@@ -54,8 +62,8 @@ class ThoseDaySquareWidgetReceiver : AppWidgetProvider() {
                     intent = WidgetIntentFactory.detailIntent(context, WidgetTargetType.DAY, model.id),
                     requestCode = appWidgetId,
                 )
+                appWidgetManager.updateAppWidget(appWidgetId, views)
             }
-            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
 }
