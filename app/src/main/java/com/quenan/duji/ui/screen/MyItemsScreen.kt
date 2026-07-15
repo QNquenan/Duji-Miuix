@@ -106,6 +106,7 @@ fun MyItemsScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
     openItemId: Long? = null,
+    onOpenItemConsumed: () -> Unit = {},
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     var fabVisible by remember { mutableStateOf(true) }
@@ -180,6 +181,7 @@ fun MyItemsScreen(
         val matchedItem = itemCardModels.firstOrNull { it.item.id == targetId }?.item ?: return@LaunchedEffect
         selectedItem = matchedItem
         showDetailBottomSheet = true
+        onOpenItemConsumed()
     }
 
     fun populateForm(item: ItemData) {

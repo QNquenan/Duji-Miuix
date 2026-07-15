@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
             val startPage = intent?.getIntExtra(WidgetIntentFactory.EXTRA_START_PAGE, 0) ?: 0
             val startTargetType = intent?.getStringExtra(WidgetIntentFactory.EXTRA_TARGET_TYPE)
             val startTargetId = intent?.getLongExtra(WidgetIntentFactory.EXTRA_TARGET_ID, -1L) ?: -1L
+            var widgetTargetConsumed by remember { mutableStateOf(false) }
             val pagerState = rememberPagerState(initialPage = startPage, pageCount = { bottomNavItems.size })
             val duJiPagerState = rememberDuJiPagerState(pagerState)
             val noticeHostState = rememberSystemNoticeHostState()
@@ -103,11 +104,13 @@ class MainActivity : ComponentActivity() {
                             when (page) {
                                 0 -> MyItemsScreen(
                                     contentPadding = PaddingValues(bottom = bottomPadding),
-                                    openItemId = if (startTargetType == WidgetTargetType.ITEM.name && startTargetId >= 0) startTargetId else null,
+                                    openItemId = if (!widgetTargetConsumed && startTargetType == WidgetTargetType.ITEM.name && startTargetId >= 0) startTargetId else null,
+                                    onOpenItemConsumed = { widgetTargetConsumed = true },
                                 )
                                 1 -> ThoseDaysScreen(
                                     contentPadding = PaddingValues(bottom = bottomPadding),
-                                    openDayId = if (startTargetType == WidgetTargetType.DAY.name && startTargetId >= 0) startTargetId else null,
+                                    openDayId = if (!widgetTargetConsumed && startTargetType == WidgetTargetType.DAY.name && startTargetId >= 0) startTargetId else null,
+                                    onOpenDayConsumed = { widgetTargetConsumed = true },
                                 )
                                 2 -> SettingsScreen(
                                     versionName = latestVersion,

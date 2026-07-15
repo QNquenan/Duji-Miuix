@@ -108,6 +108,7 @@ fun ThoseDaysScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
     openDayId: Long? = null,
+    onOpenDayConsumed: () -> Unit = {},
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     var fabVisible by remember { mutableStateOf(true) }
@@ -208,6 +209,7 @@ fun ThoseDaysScreen(
         val matchedDay = dayCardModels.firstOrNull { it.day.id == targetId }?.day ?: return@LaunchedEffect
         selectedDayItem = matchedDay
         showDetailBottomSheet = true
+        onOpenDayConsumed()
     }
 
     fun resetAddForm() {
