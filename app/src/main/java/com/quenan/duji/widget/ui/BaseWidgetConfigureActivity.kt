@@ -32,7 +32,6 @@ import com.quenan.duji.widget.WidgetSelection
 import com.quenan.duji.widget.WidgetSelectionRepository
 import com.quenan.duji.widget.WidgetSelectionType
 import com.quenan.duji.widget.WidgetUpdateDispatcher
-import kotlinx.coroutines.runBlocking
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -83,21 +82,21 @@ abstract class BaseWidgetConfigureActivity<T> : ComponentActivity() {
                             EntryCard(entry = entry, onClick = {
                                 val selection = toSelection(entry)
                                 Log.i(TAG, "selection clicked: appWidgetId=$appWidgetId, selection=$selection")
-                                runBlocking {
+                                check(
                                     WidgetSelectionRepository(applicationContext).saveSelection(
                                         appWidgetId = appWidgetId,
                                         selection = selection,
                                     )
-                                }
+                                ) { "Failed to save widget selection" }
                                 Log.i(TAG, "selection saved: appWidgetId=$appWidgetId, selection=$selection")
-                                val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                                setResult(Activity.RESULT_OK, result)
-                                Log.i(TAG, "configuration result accepted: appWidgetId=$appWidgetId")
                                 WidgetUpdateDispatcher.updateConfiguredWidget(
                                     context = applicationContext,
                                     appWidgetId = appWidgetId,
                                     selection = selection,
                                 )
+                                val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                                setResult(Activity.RESULT_OK, result)
+                                Log.i(TAG, "configuration result accepted: appWidgetId=$appWidgetId")
                                 finish()
                             })
                         }

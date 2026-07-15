@@ -50,8 +50,6 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.datastore.preferences)
     implementation(libs.lunar)
-    implementation(libs.glance.appwidget)
-    implementation(libs.glance.material3)
     debugImplementation(libs.compose.ui.tooling)
 
     // Miuix —— 全量导入

@@ -1,58 +1,39 @@
 package com.quenan.duji.widget
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 
 class WidgetSelectionRepository(context: Context) {
     private val appContext = context.applicationContext
-    private val dataStore: DataStore<Preferences> = getDataStore(appContext)
+    private val preferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    suspend fun saveSelection(appWidgetId: Int, selection: WidgetSelection) {
-        dataStore.edit { preferences ->
-            preferences[typeKey(appWidgetId)] = selection.type.ordinal
-            preferences[targetIdKey(appWidgetId)] = selection.targetId
-        }
+    fun saveSelection(appWidgetId: Int, selection: WidgetSelection): Boolean {
+        return preferences.edit()
+            .putString(selectionKey(appWidgetId), selection.type.name)
+            .putLong(targetIdKey(appWidgetId), selection.targetId)
+            .commit()
     }
 
-    suspend fun getSelection(appWidgetId: Int): WidgetSelection? {
-        return dataStore.data.map { preferences ->
-            val typeOrdinal = preferences[typeKey(appWidgetId)] ?: return@map null
-            val targetId = preferences[targetIdKey(appWidgetId)] ?: return@map null
-            val type = WidgetSelectionType.entries.getOrNull(typeOrdinal) ?: return@map null
-            WidgetSelection(type = type, targetId = targetId)
-        }.first()
+    fun getSelection(appWidgetId: Int): WidgetSelection? {
+        val typeName = preferences.getString(selectionKey(appWidgetId), null) ?: return null
+        val targetId = if (!preferences.contains(targetIdKey(appWidgetId))) return null
+        else preferences.getLong(targetIdKey(appWidgetId), 0L)
+        val type = runCatching { WidgetSelectionType.valueOf(typeName) }.getOrNull() ?: return null
+        return WidgetSelection(type = type, targetId = targetId)
     }
 
-    suspend fun clearSelection(appWidgetId: Int) {
-        dataStore.edit { preferences ->
-            preferences.remove(typeKey(appWidgetId))
-            preferences.remove(targetIdKey(appWidgetId))
-        }
+    fun clearSelection(appWidgetId: Int): Boolean {
+        return preferences.edit()
+            .remove(selectionKey(appWidgetId))
+            .remove(targetIdKey(appWidgetId))
+            .commit()
     }
 
-    private fun typeKey(appWidgetId: Int) = intPreferencesKey("widget_selection_type_$appWidgetId")
+    private fun selectionKey(appWidgetId: Int) = "widget_selection_type_$appWidgetId"
 
-    private fun targetIdKey(appWidgetId: Int) = longPreferencesKey("widget_selection_target_id_$appWidgetId")
+    private fun targetIdKey(appWidgetId: Int) = "widget_selection_target_id_$appWidgetId"
 
     private companion object {
-        @Volatile
-        private var dataStoreInstance: DataStore<Preferences>? = null
-
-        fun getDataStore(context: Context): DataStore<Preferences> {
-            return dataStoreInstance ?: synchronized(this) {
-                dataStoreInstance ?: PreferenceDataStoreFactory.create(
-                    produceFile = { context.preferencesDataStoreFile("widget_selection.preferences_pb") }
-                ).also { dataStoreInstance = it }
-            }
-        }
+        const val PREFS_NAME = "widget_data"
     }
 }
 
