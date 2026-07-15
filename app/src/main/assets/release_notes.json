@@ -3,6 +3,7 @@
     "date": "2026-07-13",
     "title": "v0.10.13",
     "items": [
+      "docs: 完善 GitHub README。",
       "docs: 添加项目 README。",
       "fix: 修复系统小部件列表名称显示。",
       "fix: 修复从小部件进入详情后切换页面重复弹出详情抽屉。",
