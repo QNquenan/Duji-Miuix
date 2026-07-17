@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.quenan.duji.data.ReleaseNotesRepository
+import com.quenan.duji.data.AppUpdateManager
 import com.quenan.duji.data.settings.SettingsRepository
 import com.quenan.duji.ui.component.LocalSystemNotice
 import com.quenan.duji.ui.component.SystemNoticeHost
@@ -48,6 +49,11 @@ import top.yukonga.miuix.kmp.icon.extended.Years
 import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        AppUpdateManager.installPending(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val settingsRepository = SettingsRepository(applicationContext)

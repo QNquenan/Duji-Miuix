@@ -16,7 +16,7 @@ data class ReleaseNoteEntry(
 
 object ReleaseNotesRepository {
     private const val REMOTE_RELEASE_NOTES_URL =
-        "https://gh-proxy.org/https://raw.githubusercontent.com/QNquenan/Duji-Miuix/main/app/src/main/assets/release_notes.json"
+        "https://gh-proxy.org/https://github.com/QNquenan/Duji-Miuix/raw/main/app/src/main/assets/release_notes.json"
 
     fun load(context: Context): List<ReleaseNoteEntry> {
         return runCatching {
@@ -29,7 +29,7 @@ object ReleaseNotesRepository {
         return latestVersionName(load(context)) ?: "未知版本"
     }
 
-    suspend fun fetchLatestVersionName(): String? = withContext(Dispatchers.IO) {
+    suspend fun fetchLatestReleaseNote(): ReleaseNoteEntry? = withContext(Dispatchers.IO) {
         val requestUrl = "$REMOTE_RELEASE_NOTES_URL?_=${System.nanoTime()}"
         val connection = (URL(requestUrl).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -50,14 +50,24 @@ object ReleaseNotesRepository {
                 throw IOException("HTTP ${connection.responseCode}")
             }
             val raw = connection.inputStream.bufferedReader().use { it.readText() }
-            latestVersionName(parse(raw))
+            latestReleaseNote(parse(raw))
         } finally {
             connection.disconnect()
         }
     }
 
+    suspend fun fetchLatestVersionName(): String? = fetchLatestReleaseNote()?.title
+
     fun isVersionNewer(remoteVersion: String, localVersion: String): Boolean {
         return compareVersionNames(remoteVersion, localVersion) > 0
+    }
+
+    fun versionTag(versionName: String): String? {
+        val version = Regex("v?\\d+(?:\\.\\d+)*", RegexOption.IGNORE_CASE)
+            .find(versionName)
+            ?.value
+            ?: return null
+        return "v${version.removePrefix("v").removePrefix("V")}"
     }
 
     private fun parse(raw: String): List<ReleaseNoteEntry> {
@@ -82,11 +92,14 @@ object ReleaseNotesRepository {
     }
 
     private fun latestVersionName(entries: List<ReleaseNoteEntry>): String? {
+        return latestReleaseNote(entries)?.title
+    }
+
+    private fun latestReleaseNote(entries: List<ReleaseNoteEntry>): ReleaseNoteEntry? {
         return entries
             .asSequence()
-            .map { it.title.trim() }
-            .filter { it.isNotEmpty() }
-            .maxWithOrNull(Comparator { first, second -> compareVersionNames(first, second) })
+            .filter { it.title.trim().isNotEmpty() }
+            .maxWithOrNull(Comparator { first, second -> compareVersionNames(first.title, second.title) })
     }
 
     private fun compareVersionNames(first: String, second: String): Int {

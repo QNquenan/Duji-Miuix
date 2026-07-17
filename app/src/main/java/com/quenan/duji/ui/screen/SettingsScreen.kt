@@ -6,16 +6,21 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -28,17 +33,21 @@ import com.quenan.duji.data.backup.parseAppBackup
 import com.quenan.duji.data.backup.toJsonString
 import com.quenan.duji.data.day.DayRepository
 import com.quenan.duji.data.item.ItemRepository
+import com.quenan.duji.data.AppUpdateManager
+import com.quenan.duji.data.ReleaseNoteEntry
 import com.quenan.duji.data.ReleaseNotesRepository
 import com.quenan.duji.ui.component.rememberNoticeAction
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Forward
@@ -51,6 +60,7 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -80,6 +90,8 @@ fun SettingsScreen(
         val safeVersion = versionName.replace('/', '-').replace(':', '-')
         "DuJi_${safeVersion}_${timestamp}.json"
     }
+    var latestRelease by remember { mutableStateOf<ReleaseNoteEntry?>(null) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -249,18 +261,22 @@ fun SettingsScreen(
                         title = "软件版本",
                         endActions = { Text(text = versionName, color = MiuixTheme.colorScheme.onBackgroundVariant) },
                         onClick = {
+                            if (isCheckingUpdate) return@ArrowPreference
                             coroutineScope.launch {
+                                isCheckingUpdate = true
                                 showNotice("正在检查更新")
-                                runCatching { ReleaseNotesRepository.fetchLatestVersionName() }
-                                    .onSuccess { remoteVersion ->
+                                runCatching { ReleaseNotesRepository.fetchLatestReleaseNote() }
+                                    .onSuccess { release ->
+                                        val remoteVersion = release?.title
                                         when {
                                             remoteVersion == null -> showNotice("未找到远端版本信息")
                                             ReleaseNotesRepository.isVersionNewer(remoteVersion, versionName) ->
-                                                showNotice("远端版本：$remoteVersion，发现新版本")
+                                                latestRelease = release
                                             else -> showNotice("远端版本：$remoteVersion，已经是最新版本了")
                                         }
                                     }
                                     .onFailure { showNotice("检查更新失败") }
+                                isCheckingUpdate = false
                             }
                         },
                         startAction = {
@@ -271,6 +287,65 @@ fun SettingsScreen(
                             )
                         },
                     )
+                }
+            }
+
+            latestRelease?.let { release ->
+                WindowDialog(
+                    title = "发现新版本",
+                    show = true,
+                    onDismissRequest = { latestRelease = null },
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            text = "远端版本：${release.title}",
+                            style = MiuixTheme.textStyles.body2,
+                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 360.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (release.items.isEmpty()) {
+                                Text(text = "暂无更新日志")
+                            } else {
+                                release.items.forEach { item ->
+                                    Text(text = "• $item")
+                                }
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(
+                                text = "取消",
+                                onClick = { latestRelease = null },
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(
+                                text = "更新",
+                                onClick = {
+                                    val targetRelease = release
+                                    latestRelease = null
+                                    runCatching {
+                                        AppUpdateManager.enqueue(context, targetRelease.title)
+                                    }.onSuccess {
+                                        showNotice("已开始下载更新")
+                                    }.onFailure {
+                                        showNotice("下载更新失败：${it.message ?: "未知错误"}")
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.textButtonColorsPrimary(),
+                            )
+                        }
+                    }
                 }
             }
 
