@@ -17,3 +17,5 @@ reasonix.toml
 .cxx
 local.properties
 app/build/
+Key/
+app/release/
