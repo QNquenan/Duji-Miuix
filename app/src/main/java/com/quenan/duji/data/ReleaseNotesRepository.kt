@@ -2,6 +2,7 @@ package com.quenan.duji.data
 
 import android.content.Context
 import org.json.JSONArray
+import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -17,6 +18,8 @@ data class ReleaseNoteEntry(
 object ReleaseNotesRepository {
     private const val REMOTE_RELEASE_NOTES_URL =
         "https://gh-proxy.org/https://github.com/QNquenan/Duji-Miuix/raw/main/app/src/main/assets/release_notes.json"
+    private const val LATEST_RELEASE_API_URL =
+        "https://api.github.com/repos/QNquenan/Duji-Miuix/releases/latest"
 
     fun load(context: Context): List<ReleaseNoteEntry> {
         return runCatching {
@@ -57,6 +60,27 @@ object ReleaseNotesRepository {
     }
 
     suspend fun fetchLatestVersionName(): String? = fetchLatestReleaseNote()?.title
+
+    suspend fun fetchLatestReleaseTag(): String? = withContext(Dispatchers.IO) {
+        val connection = (URL(LATEST_RELEASE_API_URL).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 15_000
+            readTimeout = 15_000
+            instanceFollowRedirects = true
+            useCaches = false
+            defaultUseCaches = false
+            setRequestProperty("Accept", "application/vnd.github+json")
+            setRequestProperty("User-Agent", "DuJi-Android")
+        }
+
+        try {
+            if (connection.responseCode !in 200..299) return@withContext null
+            val raw = connection.inputStream.bufferedReader().use { it.readText() }
+            JSONObject(raw).optString("tag_name").trim().takeIf { it.isNotEmpty() }
+        } finally {
+            connection.disconnect()
+        }
+    }
 
     fun isVersionNewer(remoteVersion: String, localVersion: String): Boolean {
         return compareVersionNames(remoteVersion, localVersion) > 0

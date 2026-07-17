@@ -333,12 +333,14 @@ fun SettingsScreen(
                                 onClick = {
                                     val targetRelease = release
                                     latestRelease = null
-                                    runCatching {
-                                        AppUpdateManager.enqueue(context, targetRelease.title)
-                                    }.onSuccess {
-                                        showNotice("已开始下载更新")
-                                    }.onFailure {
-                                        showNotice("下载更新失败：${it.message ?: "未知错误"}")
+                                    coroutineScope.launch {
+                                        runCatching {
+                                            AppUpdateManager.enqueue(context, targetRelease.title)
+                                        }.onSuccess {
+                                            showNotice("已开始下载更新")
+                                        }.onFailure {
+                                            showNotice("下载更新失败：${it.message ?: "未知错误"}")
+                                        }
                                     }
                                 },
                                 modifier = Modifier.weight(1f),

@@ -9,10 +9,14 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 object AppUpdateManager {
-    private const val DOWNLOAD_URL =
+    private const val DOWNLOAD_URL_PREFIX =
+        "https://gh-proxy.org/https://github.com/QNquenan/Duji-Miuix/releases/download/"
+    private const val LATEST_DOWNLOAD_URL =
         "https://gh-proxy.org/https://github.com/QNquenan/Duji-Miuix/releases/latest/download/app-release.apk"
     private const val APK_FILE_NAME = "app-release.apk"
     private const val PREFERENCES_NAME = "app_update"
@@ -20,9 +24,14 @@ object AppUpdateManager {
     private const val APK_PATH_KEY = "apk_path"
     private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
 
-    fun enqueue(context: Context, versionName: String): Long {
+    suspend fun enqueue(context: Context, versionName: String): Long {
         val versionTag = ReleaseNotesRepository.versionTag(versionName)
-        val downloadUrl = DOWNLOAD_URL
+        val releaseTag = runCatching {
+            ReleaseNotesRepository.fetchLatestReleaseTag()
+        }.getOrNull()?.let { ReleaseNotesRepository.versionTag(it) }
+        val downloadUrl = releaseTag?.let {
+            "$DOWNLOAD_URL_PREFIX$it/$APK_FILE_NAME"
+        } ?: LATEST_DOWNLOAD_URL
         val downloadDirectory = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
             ?: error("无法访问应用下载目录")
         val apkFile = File(downloadDirectory, "DuJi-$versionTag-$APK_FILE_NAME")
@@ -39,7 +48,9 @@ object AppUpdateManager {
                 apkFile.name,
             )
 
-        val downloadId = context.getSystemService(DownloadManager::class.java).enqueue(request)
+        val downloadId = withContext(Dispatchers.Main) {
+            context.getSystemService(DownloadManager::class.java).enqueue(request)
+        }
         context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
             .edit()
             .putLong(DOWNLOAD_ID_KEY, downloadId)
