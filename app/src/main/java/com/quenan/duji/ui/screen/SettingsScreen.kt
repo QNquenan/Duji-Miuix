@@ -256,8 +256,8 @@ fun SettingsScreen(
                                         when {
                                             remoteVersion == null -> showNotice("未找到远端版本信息")
                                             ReleaseNotesRepository.isVersionNewer(remoteVersion, versionName) ->
-                                                showNotice("发现新版本：$remoteVersion")
-                                            else -> showNotice("已经是最新版本了")
+                                                showNotice("远端版本：$remoteVersion，发现新版本")
+                                            else -> showNotice("远端版本：$remoteVersion，已经是最新版本了")
                                         }
                                     }
                                     .onFailure { showNotice("检查更新失败") }

@@ -30,12 +30,17 @@ object ReleaseNotesRepository {
     }
 
     suspend fun fetchLatestVersionName(): String? = withContext(Dispatchers.IO) {
-        val connection = (URL(REMOTE_RELEASE_NOTES_URL).openConnection() as HttpURLConnection).apply {
+        val requestUrl = "$REMOTE_RELEASE_NOTES_URL?_=${System.currentTimeMillis()}"
+        val connection = (URL(requestUrl).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 15_000
             readTimeout = 15_000
             instanceFollowRedirects = true
+            useCaches = false
+            defaultUseCaches = false
             setRequestProperty("Accept", "application/json")
+            setRequestProperty("Cache-Control", "no-cache, no-store")
+            setRequestProperty("Pragma", "no-cache")
             setRequestProperty("User-Agent", "DuJi-Android")
         }
 
