@@ -51,8 +51,37 @@ jobs:
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
 
+      - name: Prepare release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 - "$RELEASE_TAG" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          release_tag = sys.argv[1]
+          notes_path = Path("app/src/main/assets/release_notes.json")
+          notes = json.loads(notes_path.read_text(encoding="utf-8"))
+          release = next((item for item in notes if item.get("title") == release_tag), None)
+
+          if release is None:
+              available = ", ".join(item.get("title", "") for item in notes)
+              raise SystemExit(
+                  f"No release notes found for {release_tag}. Available versions: {available}"
+              )
+
+          lines = [f"## {release_tag}", ""]
+          lines.extend(f"- {item}" for item in release.get("items", []))
+          Path("release-notes.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
       - name: Upload APK to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          generate_release_notes: false
           files: app/build/outputs/apk/**/*.apk
