@@ -28,6 +28,7 @@ import com.quenan.duji.data.backup.parseAppBackup
 import com.quenan.duji.data.backup.toJsonString
 import com.quenan.duji.data.day.DayRepository
 import com.quenan.duji.data.item.ItemRepository
+import com.quenan.duji.data.ReleaseNotesRepository
 import com.quenan.duji.ui.component.rememberNoticeAction
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -248,7 +249,19 @@ fun SettingsScreen(
                         title = "软件版本",
                         endActions = { Text(text = versionName, color = MiuixTheme.colorScheme.onBackgroundVariant) },
                         onClick = {
-                            showNotice("已经是最新版本了")
+                            coroutineScope.launch {
+                                showNotice("正在检查更新")
+                                runCatching { ReleaseNotesRepository.fetchLatestVersionName() }
+                                    .onSuccess { remoteVersion ->
+                                        when {
+                                            remoteVersion == null -> showNotice("未找到远端版本信息")
+                                            ReleaseNotesRepository.isVersionNewer(remoteVersion, versionName) ->
+                                                showNotice("发现新版本：$remoteVersion")
+                                            else -> showNotice("已经是最新版本了")
+                                        }
+                                    }
+                                    .onFailure { showNotice("检查更新失败") }
+                            }
                         },
                         startAction = {
                             Icon(
