@@ -12,8 +12,8 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 object AppUpdateManager {
-    private const val DOWNLOAD_URL_PREFIX =
-        "https://gh-proxy.org/https://github.com/QNquenan/Duji-Miuix/releases/download/"
+    private const val DOWNLOAD_URL =
+        "https://gh-proxy.org/https://github.com/QNquenan/Duji-Miuix/releases/latest/download/app-release.apk"
     private const val APK_FILE_NAME = "app-release.apk"
     private const val PREFERENCES_NAME = "app_update"
     private const val DOWNLOAD_ID_KEY = "download_id"
@@ -22,13 +22,12 @@ object AppUpdateManager {
 
     fun enqueue(context: Context, versionName: String): Long {
         val versionTag = ReleaseNotesRepository.versionTag(versionName)
-            ?: error("无法识别版本号：$versionName")
-        val downloadUrl = "$DOWNLOAD_URL_PREFIX$versionTag/$APK_FILE_NAME"
+        val downloadUrl = DOWNLOAD_URL
         val downloadDirectory = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
             ?: error("无法访问应用下载目录")
         val apkFile = File(downloadDirectory, "DuJi-$versionTag-$APK_FILE_NAME")
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
-            .setTitle("DuJi $versionTag")
+            .setTitle("DuJi ${versionTag ?: versionName}")
             .setDescription("正在下载更新")
             .setMimeType(APK_MIME_TYPE)
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
