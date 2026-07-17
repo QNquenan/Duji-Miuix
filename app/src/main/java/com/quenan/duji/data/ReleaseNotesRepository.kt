@@ -16,7 +16,7 @@ data class ReleaseNoteEntry(
 
 object ReleaseNotesRepository {
     private const val REMOTE_RELEASE_NOTES_URL =
-        "https://gh-proxy.org/https://github.com/QNquenan/Duji-Miuix/blob/main/app/src/main/assets/release_notes.json"
+        "https://gh-proxy.org/https://raw.githubusercontent.com/QNquenan/Duji-Miuix/main/app/src/main/assets/release_notes.json"
 
     fun load(context: Context): List<ReleaseNoteEntry> {
         return runCatching {
@@ -30,7 +30,7 @@ object ReleaseNotesRepository {
     }
 
     suspend fun fetchLatestVersionName(): String? = withContext(Dispatchers.IO) {
-        val requestUrl = "$REMOTE_RELEASE_NOTES_URL?_=${System.currentTimeMillis()}"
+        val requestUrl = "$REMOTE_RELEASE_NOTES_URL?_=${System.nanoTime()}"
         val connection = (URL(requestUrl).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 15_000
@@ -39,8 +39,9 @@ object ReleaseNotesRepository {
             useCaches = false
             defaultUseCaches = false
             setRequestProperty("Accept", "application/json")
-            setRequestProperty("Cache-Control", "no-cache, no-store")
+            setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0")
             setRequestProperty("Pragma", "no-cache")
+            setRequestProperty("Expires", "0")
             setRequestProperty("User-Agent", "DuJi-Android")
         }
 
