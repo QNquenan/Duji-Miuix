@@ -8,7 +8,15 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -23,29 +31,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.quenan.duji.data.ReleaseNotesRepository
 import com.quenan.duji.data.AppUpdateManager
 import com.quenan.duji.data.settings.SettingsRepository
 import com.quenan.duji.ui.component.LocalSystemNotice
 import com.quenan.duji.ui.component.SystemNoticeHost
+import com.quenan.duji.ui.component.fbutton.FloatingBottomBar
+import com.quenan.duji.ui.component.fbutton.FloatingBottomBarItem
 import com.quenan.duji.ui.component.rememberSystemNoticeHostState
 import com.quenan.duji.ui.screen.MyItemsScreen
 import com.quenan.duji.ui.screen.SettingsScreen
 import com.quenan.duji.ui.screen.ThoseDaysScreen
 import com.quenan.duji.ui.theme.DuJiTheme
+import com.quenan.duji.ui.theme.LocalEnableBlur
 import com.quenan.duji.widget.WidgetIntentFactory
 import com.quenan.duji.widget.WidgetTargetType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.All
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Years
+import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
@@ -84,27 +102,68 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
                 val currentPage = pagerState.currentPage
                 LaunchedEffect(currentPage) { duJiPagerState.syncPage() }
+                val isBlurEnabled = LocalEnableBlur.current && isRenderEffectSupported()
+                val surfaceColor = MiuixTheme.colorScheme.surface
+                val backdrop = rememberLayerBackdrop {
+                    drawRect(surfaceColor)
+                    drawContent()
+                }
 
                 CompositionLocalProvider(LocalSystemNotice provides noticeHostState) {
                     Scaffold(
                         bottomBar = {
-                            NavigationBar {
-                                bottomNavItems.forEachIndexed { index, item ->
-                                    NavigationBarItem(
-                                        modifier = androidx.compose.ui.Modifier.weight(1f),
-                                        icon = item.icon,
-                                        label = item.label,
-                                        selected = duJiPagerState.selectedPage == index,
-                                        onClick = {
-                                            duJiPagerState.animateToPage(index)
+                            Box(
+                                modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                                contentAlignment = androidx.compose.ui.Alignment.BottomCenter,
+                            ) {
+                                FloatingBottomBar(
+                                    modifier = androidx.compose.ui.Modifier
+                                        .clickable(
+                                            interactionSource = null,
+                                            indication = null,
+                                            onClick = {},
+                                        )
+                                        .padding(
+                                            bottom = 12.dp + WindowInsets.navigationBars
+                                                .asPaddingValues()
+                                                .calculateBottomPadding()
+                                        ),
+                                    selectedIndex = { duJiPagerState.selectedPage },
+                                    onSelected = { duJiPagerState.animateToPage(it) },
+                                    backdrop = backdrop,
+                                    tabsCount = bottomNavItems.size,
+                                    isBlurEnabled = isBlurEnabled,
+                                ) {
+                                    bottomNavItems.forEachIndexed { index, item ->
+                                        FloatingBottomBarItem(
+                                            onClick = { duJiPagerState.animateToPage(index) },
+                                            modifier = androidx.compose.ui.Modifier.defaultMinSize(minWidth = 76.dp),
+                                        ) {
+                                            Icon(
+                                                imageVector = item.icon,
+                                                contentDescription = item.label,
+                                            )
+                                            Text(
+                                                text = item.label,
+                                                fontSize = 11.sp,
+                                                lineHeight = 14.sp,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                overflow = TextOverflow.Visible,
+                                            )
                                         }
-                                    )
+                                    }
                                 }
                             }
                         }
                     ) { innerPadding ->
                         val bottomPadding = innerPadding.calculateBottomPadding()
                         HorizontalPager(
+                            modifier = if (isBlurEnabled) {
+                                androidx.compose.ui.Modifier.layerBackdrop(backdrop)
+                            } else {
+                                androidx.compose.ui.Modifier
+                            },
                             state = pagerState,
                         ) { page ->
                             when (page) {

@@ -23,8 +23,8 @@ android {
         applicationId = "com.quenan.duji"
         minSdk = 33
         targetSdk = 36
-        versionCode = 19
-        versionName = "0.10.17"
+        versionCode = 20
+        versionName = "0.10.18"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
