@@ -1,9 +1,9 @@
 [
   {
     "date": "2026-07-20",
-    "title": "v0.10.18",
+    "title": "v0.10.19",
     "items": [
-      "feat: 搬运 KernelSU Apple 风格悬浮底栏与液态玻璃导航交互"
+      "build: 升级 Miuix 依赖至 0.9.3"
     ]
   },
   {
