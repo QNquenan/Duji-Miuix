@@ -42,6 +42,7 @@ import com.quenan.duji.ui.component.SystemNoticeHost
 import com.quenan.duji.ui.component.fbutton.FloatingBottomBar
 import com.quenan.duji.ui.component.fbutton.FloatingBottomBarItem
 import com.quenan.duji.ui.component.rememberSystemNoticeHostState
+import com.quenan.duji.ui.screen.CheckInScreen
 import com.quenan.duji.ui.screen.MyItemsScreen
 import com.quenan.duji.ui.screen.SettingsScreen
 import com.quenan.duji.ui.screen.ThoseDaysScreen
@@ -60,6 +61,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.All
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Years
 import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
@@ -177,7 +179,10 @@ class MainActivity : ComponentActivity() {
                                     openDayId = if (!widgetTargetConsumed && startTargetType == WidgetTargetType.DAY.name && startTargetId >= 0) startTargetId else null,
                                     onOpenDayConsumed = { widgetTargetConsumed = true },
                                 )
-                                2 -> SettingsScreen(
+                                2 -> CheckInScreen(
+                                    contentPadding = PaddingValues(bottom = bottomPadding),
+                                )
+                                3 -> SettingsScreen(
                                     versionName = latestVersion,
                                     selectedColorModeIndex = settings.colorModeIndex,
                                     predictiveBackEnabled = settings.predictiveBackEnabled,
@@ -211,6 +216,7 @@ private data class BottomNavItem(
 private val bottomNavItems = listOf(
     BottomNavItem("我的物品", MiuixIcons.All),
     BottomNavItem("那些日子", MiuixIcons.Years),
+    BottomNavItem("打卡", MiuixIcons.Ok),
     BottomNavItem("设置", MiuixIcons.Settings),
 )
 
