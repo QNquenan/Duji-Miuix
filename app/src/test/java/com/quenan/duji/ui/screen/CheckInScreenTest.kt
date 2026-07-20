@@ -58,4 +58,14 @@ class CheckInScreenTest {
         assertEquals(YearMonth.of(2026, 2), result.first)
         assertEquals(LocalDate.of(2026, 2, 10), result.second)
     }
+
+    @Test
+    fun selectedDateInMonthClampsDateChosenFromMonthPicker() {
+        val result = selectedDateInMonth(
+            month = YearMonth.of(2026, 2),
+            selectedDate = LocalDate.of(2026, 1, 31),
+        )
+
+        assertEquals(LocalDate.of(2026, 2, 28), result)
+    }
 }
