@@ -53,6 +53,18 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun updateItem(item: CheckInItem) {
+        viewModelScope.launch {
+            repository.updateItem(item)
+        }
+    }
+
+    fun deleteItem(itemId: Long) {
+        viewModelScope.launch {
+            repository.deleteItem(itemId)
+        }
+    }
+
     suspend fun getAllItems(): List<CheckInItem> = repository.getAllItems()
 
     suspend fun getAllRecords(): List<CheckInRecord> = repository.getAllRecords()

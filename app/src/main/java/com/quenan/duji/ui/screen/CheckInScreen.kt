@@ -3,6 +3,7 @@ package com.quenan.duji.ui.screen
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,11 +40,14 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.quenan.duji.data.checkin.CheckInItem
+import com.quenan.duji.ui.component.DuJiCalendar
 import com.quenan.duji.ui.component.EmptyStateCard
 import com.quenan.duji.ui.component.rememberNoticeAction
 import java.time.LocalDate
@@ -55,6 +59,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.ColorPalette
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Surface
@@ -64,7 +69,12 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.window.WindowDialog
 
 private const val DEFAULT_CHECK_IN_EMOJI = "🏋️"
@@ -120,12 +130,26 @@ fun CheckInScreen(
     var selectedEmoji by remember { mutableStateOf(DEFAULT_CHECK_IN_EMOJI) }
     var customEmojiText by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(defaultCheckInColor) }
+    var selectedCard by remember { mutableStateOf<CheckInCardUiModel?>(null) }
+    var editingItem by remember { mutableStateOf<CheckInItem?>(null) }
+    var showDetailBottomSheet by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     fun resetAddForm() {
         checkInName = ""
         selectedEmoji = DEFAULT_CHECK_IN_EMOJI
         customEmojiText = ""
         selectedColor = defaultCheckInColor
+        showEmojiDialog = false
+        showCustomEmojiDialog = false
+        showColorDialog = false
+    }
+
+    fun populateForm(item: CheckInItem) {
+        checkInName = item.name
+        selectedEmoji = item.emoji
+        customEmojiText = ""
+        selectedColor = Color(item.colorArgb)
         showEmojiDialog = false
         showCustomEmojiDialog = false
         showColorDialog = false
@@ -166,6 +190,10 @@ fun CheckInScreen(
                                     showNotice(if (isSuccess) "打卡成功" else "请勿重复打卡")
                                 }
                             },
+                            onClick = {
+                                selectedCard = card
+                                showDetailBottomSheet = true
+                            },
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -182,6 +210,7 @@ fun CheckInScreen(
                     .offset { IntOffset(x = 0, y = fabBottomOffset.roundToPx()) },
                 onClick = {
                     resetAddForm()
+                    editingItem = null
                     showAddDialog = true
                 },
             ) {
@@ -196,6 +225,7 @@ fun CheckInScreen(
 
     CheckInItemDialog(
         show = showAddDialog,
+        title = if (editingItem == null) "添加打卡项" else "编辑打卡项",
         name = checkInName,
         emoji = selectedEmoji,
         color = selectedColor,
@@ -207,6 +237,7 @@ fun CheckInScreen(
             showEmojiDialog = false
             showCustomEmojiDialog = false
             showColorDialog = false
+            editingItem = null
         },
         onConfirm = {
             val name = checkInName.trim()
@@ -214,12 +245,23 @@ fun CheckInScreen(
                 showNotice("请输入打卡名")
                 return@CheckInItemDialog
             }
-            viewModel.addItem(
+            val colorArgb = selectedColor.toArgb().toLong() and 0xFFFF_FFFFL
+            editingItem?.let { item ->
+                viewModel.updateItem(
+                    item.copy(
+                        emoji = selectedEmoji,
+                        name = name,
+                        colorArgb = colorArgb,
+                    ),
+                )
+                showNotice("保存成功")
+            } ?: viewModel.addItem(
                 emoji = selectedEmoji,
                 name = name,
-                colorArgb = selectedColor.toArgb().toLong() and 0xFFFF_FFFFL,
+                colorArgb = colorArgb,
             )
             showAddDialog = false
+            editingItem = null
         },
     )
 
@@ -258,12 +300,98 @@ fun CheckInScreen(
             showColorDialog = false
         },
     )
+
+    selectedCard?.let { detailCard ->
+        WindowBottomSheet(
+            show = showDetailBottomSheet,
+            title = "打卡详情",
+            backgroundColor = MiuixTheme.colorScheme.surface,
+            insideMargin = DpSize(10.dp, 12.dp),
+            startAction = {
+                val dismiss = LocalDismissState.current
+                IconButton(onClick = {
+                    showDetailBottomSheet = false
+                    dismiss?.invoke()
+                }) {
+                    Icon(
+                        imageVector = MiuixIcons.Close,
+                        contentDescription = "关闭",
+                        tint = MiuixTheme.colorScheme.onBackground,
+                    )
+                }
+            },
+            endAction = {
+                val dismiss = LocalDismissState.current
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(onClick = { showDeleteConfirmDialog = true }) {
+                        Icon(
+                            imageVector = MiuixIcons.Delete,
+                            contentDescription = "删除",
+                            tint = Color(0xFFFF3B30),
+                        )
+                    }
+                    IconButton(onClick = {
+                        populateForm(detailCard.item)
+                        editingItem = detailCard.item
+                        showDetailBottomSheet = false
+                        dismiss?.invoke()
+                        showAddDialog = true
+                    }) {
+                        Icon(
+                            imageVector = MiuixIcons.Edit,
+                            contentDescription = "编辑",
+                            tint = MiuixTheme.colorScheme.onBackground,
+                        )
+                    }
+                }
+            },
+            onDismissRequest = { showDetailBottomSheet = false },
+            onDismissFinished = { selectedCard = null },
+        ) {
+            CheckInDetailContent(detailCard)
+        }
+    }
+
+    if (showDeleteConfirmDialog && selectedCard != null) {
+        WindowDialog(
+            title = "删除打卡项",
+            summary = "确认删除 ${selectedCard?.item?.name} 及其全部打卡记录吗？",
+            show = true,
+            onDismissRequest = { showDeleteConfirmDialog = false },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(
+                    text = "取消",
+                    onClick = { showDeleteConfirmDialog = false },
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    text = "删除",
+                    onClick = {
+                        selectedCard?.let { card ->
+                            viewModel.deleteItem(card.item.id)
+                            showNotice("删除成功")
+                        }
+                        showDeleteConfirmDialog = false
+                        showDetailBottomSheet = false
+                        selectedCard = null
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+        }
+    }
 }
 
 @Composable
 private fun CheckInCard(
     card: CheckInCardUiModel,
     onCheckIn: () -> Unit,
+    onClick: () -> Unit,
 ) {
     val itemColor = remember(card.item.colorArgb) { Color(card.item.colorArgb) }
     val currentMonth = YearMonth.now()
@@ -278,7 +406,9 @@ private fun CheckInCard(
     val buttonContentColor = if (card.checkedToday) itemColor else Color.White
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
     ) {
@@ -326,9 +456,9 @@ private fun CheckInCard(
             }
             Button(
                 onClick = onCheckIn,
-                modifier = Modifier.width(72.dp),
+                modifier = Modifier.width(84.dp),
                 cornerRadius = 50.dp,
-                minWidth = 72.dp,
+                minWidth = 84.dp,
                 minHeight = 50.dp,
                 colors = ButtonDefaults.buttonColors(
                     color = buttonColor,
@@ -337,8 +467,9 @@ private fun CheckInCard(
             ) {
                 Text(
                     text = if (card.checkedToday) "已打卡" else "打卡",
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
                 )
             }
         }
@@ -346,8 +477,63 @@ private fun CheckInCard(
 }
 
 @Composable
+private fun CheckInDetailContent(card: CheckInCardUiModel) {
+    val itemColor = remember(card.item.colorArgb) { Color(card.item.colorArgb) }
+    val currentMonth = YearMonth.now()
+    val monthlyCount = card.records.count { record ->
+        runCatching { YearMonth.from(LocalDate.parse(record.date)) }.getOrNull() == currentMonth
+    }
+    val badgeColors = remember(card.records, itemColor) {
+        card.records.mapNotNull { record ->
+            runCatching { LocalDate.parse(record.date) }.getOrNull()
+        }.associateWith { itemColor }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(itemColor.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = card.item.emoji, fontSize = 28.sp)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = card.item.name,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = "本月${monthlyCount}次 • 共${card.records.size}次",
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                )
+            }
+        }
+        DuJiCalendar(
+            badgeColors = badgeColors,
+            onDateSelected = {},
+        )
+    }
+}
+
+@Composable
 private fun CheckInItemDialog(
     show: Boolean,
+    title: String,
     name: String,
     emoji: String,
     color: Color,
@@ -358,7 +544,7 @@ private fun CheckInItemDialog(
     onConfirm: () -> Unit,
 ) {
     WindowDialog(
-        title = "添加打卡项",
+        title = title,
         show = show,
         onDismissRequest = onDismiss,
     ) {

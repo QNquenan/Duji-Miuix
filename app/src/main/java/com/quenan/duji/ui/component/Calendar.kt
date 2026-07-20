@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -63,6 +65,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Forward
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
@@ -78,6 +81,7 @@ private val weekendColor = Color(0xFF4D8DFF)
 fun DuJiCalendar(
     modifier: Modifier = Modifier,
     initialDate: LocalDate = LocalDate.now(),
+    badgeColors: Map<LocalDate, Color> = emptyMap(),
     onDateSelected: (LocalDate) -> Unit = {},
 ) {
     key(initialDate) {
@@ -172,6 +176,7 @@ fun DuJiCalendar(
                     month = calendarMonthForPage(page, baseMonth),
                     today = today,
                     selectedDate = selectedDate,
+                    badgeColors = badgeColors,
                     collapseProgress = collapseProgress,
                     onDateClick = {
                         selectedDate = it
@@ -269,6 +274,7 @@ private fun CalendarMonthContent(
     month: YearMonth,
     today: LocalDate,
     selectedDate: LocalDate,
+    badgeColors: Map<LocalDate, Color>,
     collapseProgress: Float,
     onDateClick: (LocalDate) -> Unit,
 ) {
@@ -321,6 +327,7 @@ private fun CalendarMonthContent(
                             weekIndex = weekIndex,
                             today = today,
                             selectedDate = selectedDate,
+                            badgeColors = badgeColors,
                             onDateClick = onDateClick,
                         )
                     }
@@ -361,6 +368,7 @@ private fun CalendarWeekRow(
     weekIndex: Int,
     today: LocalDate,
     selectedDate: LocalDate,
+    badgeColors: Map<LocalDate, Color>,
     onDateClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -376,6 +384,7 @@ private fun CalendarWeekRow(
                 isToday = date == today,
                 isSelected = date == selectedDate,
                 isWeekend = dayIndex >= 5,
+                badgeColor = badgeColors[date],
                 onClick = { onDateClick(date) },
                 modifier = Modifier
                     .weight(1f)
@@ -392,6 +401,7 @@ private fun CheckInDayCell(
     isToday: Boolean,
     isSelected: Boolean,
     isWeekend: Boolean,
+    badgeColor: Color?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -410,29 +420,51 @@ private fun CheckInDayCell(
         else -> MiuixTheme.colorScheme.onBackgroundVariant
     }
 
-    Column(
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(if (isSelected) MiuixTheme.colorScheme.primary else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
-        Text(
-            text = date.dayOfMonth.toString(),
-            color = dayColor,
-            fontSize = 20.sp,
-            fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = lunar?.dayName.orEmpty(),
-            color = lunarColor,
-            fontSize = 11.sp,
-            maxLines = 1,
-            textAlign = TextAlign.Center,
-        )
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                color = dayColor,
+                fontSize = 20.sp,
+                fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = lunar?.dayName.orEmpty(),
+                color = lunarColor,
+                fontSize = 11.sp,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+            )
+        }
+        badgeColor?.let { color ->
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 2.dp, end = 2.dp)
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(color),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Ok,
+                    contentDescription = "已打卡",
+                    modifier = Modifier.size(10.dp),
+                    tint = Color.White,
+                )
+            }
+        }
     }
 }
 

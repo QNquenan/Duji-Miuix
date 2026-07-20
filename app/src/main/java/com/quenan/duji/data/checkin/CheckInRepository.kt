@@ -46,6 +46,26 @@ class CheckInRepository(context: Context) {
         return added
     }
 
+    suspend fun updateItem(item: CheckInItem) {
+        dataStore.edit { preferences ->
+            val updatedItems = decodeItems(preferences[ITEMS_KEY].orEmpty()).map { current ->
+                if (current.id == item.id) item else current
+            }
+            preferences[ITEMS_KEY] = encodeItems(updatedItems)
+        }
+    }
+
+    suspend fun deleteItem(itemId: Long) {
+        dataStore.edit { preferences ->
+            val remainingItems = decodeItems(preferences[ITEMS_KEY].orEmpty())
+                .filterNot { item -> item.id == itemId }
+            val remainingRecords = decodeRecords(preferences[RECORDS_KEY].orEmpty())
+                .filterNot { record -> record.itemId == itemId }
+            preferences[ITEMS_KEY] = encodeItems(remainingItems)
+            preferences[RECORDS_KEY] = encodeRecords(remainingRecords)
+        }
+    }
+
     suspend fun getAllItems(): List<CheckInItem> = dataStore.data.map { preferences ->
         decodeItems(preferences[ITEMS_KEY].orEmpty())
     }.first()
