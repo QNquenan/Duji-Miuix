@@ -38,13 +38,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.ui.util.solarToLunar
@@ -52,6 +53,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -73,6 +75,7 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 
 private const val CALENDAR_PAGE_COUNT = 10_001
 private const val CALENDAR_INITIAL_PAGE = CALENDAR_PAGE_COUNT / 2
+private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
 
@@ -152,6 +155,10 @@ fun CheckInScreen(
                     .pointerInput(Unit) {
                         var totalDrag = 0f
                         detectVerticalDragGestures(
+                            onDragStart = {
+                                totalDrag = 0f
+                                collapseAnimationJob.value?.cancel()
+                            },
                             onVerticalDrag = { _, dragAmount ->
                                 collapseAnimationJob.value?.cancel()
                                 totalDrag += dragAmount
@@ -223,7 +230,7 @@ private fun CalendarMonthContent(
 ) {
     val firstDay = month.atDay(1)
     val gridStart = firstDay.minusDays((firstDay.dayOfWeek.value - 1).toLong())
-    val collapsedDate = if (YearMonth.from(today) == month) today else selectedDate
+    val collapsedDate = if (YearMonth.from(today) == month) today else selectedDateInMonth(month, selectedDate)
     val collapsedWeekIndex = calendarWeekIndex(month, collapsedDate)
 
     Column {
@@ -258,20 +265,34 @@ private fun CalendarMonthContent(
 
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val rowHeight = (maxWidth - 24.dp) / 7f
-            val expandedHeight = rowHeight * 5 + 32.dp
-            val gridHeight = expandedHeight * (1f - collapseProgress) + rowHeight * collapseProgress
+            val weekCount = calendarWeekCount(month)
+            val density = LocalDensity.current
+            val rowHeightPx = with(density) { rowHeight.toPx() }
+            val rowSpacingPx = with(density) { calendarRowSpacing.toPx() }
+            val expandedHeightPx = calendarGridHeightPx(
+                rowHeightPx = rowHeightPx,
+                rowSpacingPx = rowSpacingPx,
+                weekCount = weekCount,
+            )
+            val clipWindow = calendarClipWindow(
+                rowHeightPx = rowHeightPx,
+                rowSpacingPx = rowSpacingPx,
+                weekCount = weekCount,
+                currentWeekIndex = collapsedWeekIndex,
+                collapseProgress = collapseProgress,
+            )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(gridHeight)
-                    .clipToBounds(),
+            CalendarGridViewport(
+                viewportHeightPx = clipWindow.heightPx.roundToInt(),
+                contentHeightPx = expandedHeightPx.roundToInt(),
+                contentTopPx = clipWindow.topPx.roundToInt(),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
-                    modifier = Modifier.graphicsLayer { alpha = 1f - collapseProgress },
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(calendarRowSpacing),
                 ) {
-                    repeat(5) { weekIndex ->
+                    repeat(weekCount) { weekIndex ->
                         CalendarWeekRow(
                             month = month,
                             gridStart = gridStart,
@@ -282,16 +303,31 @@ private fun CalendarMonthContent(
                         )
                     }
                 }
-                CalendarWeekRow(
-                    month = month,
-                    gridStart = gridStart,
-                    weekIndex = collapsedWeekIndex,
-                    today = today,
-                    selectedDate = selectedDate,
-                    onDateClick = onDateClick,
-                    modifier = Modifier.graphicsLayer { alpha = collapseProgress },
-                )
             }
+        }
+    }
+}
+
+@Composable
+private fun CalendarGridViewport(
+    viewportHeightPx: Int,
+    contentHeightPx: Int,
+    contentTopPx: Int,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Layout(
+        modifier = modifier.clipToBounds(),
+        content = content,
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val contentPlaceable = measurables.single().measure(
+            Constraints.fixed(width = width, height = contentHeightPx),
+        )
+        val height = viewportHeightPx.coerceIn(constraints.minHeight, constraints.maxHeight)
+
+        layout(width, height) {
+            contentPlaceable.placeRelative(0, -contentTopPx)
         }
     }
 }
@@ -400,10 +436,48 @@ private fun calendarPageForMonth(month: YearMonth, baseMonth: YearMonth): Int {
     return (CALENDAR_INITIAL_PAGE + monthOffset).coerceIn(0, CALENDAR_PAGE_COUNT - 1)
 }
 
-private fun calendarWeekIndex(month: YearMonth, date: LocalDate): Int {
+internal fun calendarWeekCount(month: YearMonth): Int {
+    val leadingDays = month.atDay(1).dayOfWeek.value - 1
+    return (leadingDays + month.lengthOfMonth() + 6) / 7
+}
+
+internal fun calendarWeekIndex(month: YearMonth, date: LocalDate): Int {
     val leadingDays = month.atDay(1).dayOfWeek.value - 1
     val dayOfMonth = if (YearMonth.from(date) == month) date.dayOfMonth else 1
     return (leadingDays + dayOfMonth - 1) / 7
+}
+
+internal fun calendarGridHeightPx(
+    rowHeightPx: Float,
+    rowSpacingPx: Float,
+    weekCount: Int,
+): Float {
+    val safeWeekCount = weekCount.coerceAtLeast(1)
+    return rowHeightPx * safeWeekCount + rowSpacingPx * (safeWeekCount - 1)
+}
+
+internal data class CalendarClipWindow(
+    val topPx: Float,
+    val heightPx: Float,
+)
+
+internal fun calendarClipWindow(
+    rowHeightPx: Float,
+    rowSpacingPx: Float,
+    weekCount: Int,
+    currentWeekIndex: Int,
+    collapseProgress: Float,
+): CalendarClipWindow {
+    val safeWeekCount = weekCount.coerceAtLeast(1)
+    val safeCurrentWeekIndex = currentWeekIndex.coerceIn(0, safeWeekCount - 1)
+    val progress = collapseProgress.coerceIn(0f, 1f)
+    val expandedHeightPx = calendarGridHeightPx(rowHeightPx, rowSpacingPx, safeWeekCount)
+    val currentRowTopPx = (rowHeightPx + rowSpacingPx) * safeCurrentWeekIndex
+
+    return CalendarClipWindow(
+        topPx = currentRowTopPx * progress,
+        heightPx = expandedHeightPx + (rowHeightPx - expandedHeightPx) * progress,
+    )
 }
 
 @Composable
