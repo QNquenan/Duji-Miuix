@@ -43,6 +43,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -456,7 +457,7 @@ fun ThoseDaysScreen(
                     .navigationBarsPadding()
                     .padding(contentPadding)
                     .padding(end = 16.dp, bottom = 16.dp)
-                    .offset(y = fabBottomOffset),
+                    .offset { IntOffset(x = 0, y = fabBottomOffset.roundToPx()) },
                 onClick = {
                     resetAddForm()
                     showBottomSheet = true

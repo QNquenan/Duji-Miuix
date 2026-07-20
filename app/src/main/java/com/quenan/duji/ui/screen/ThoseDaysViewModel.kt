@@ -10,9 +10,11 @@ import com.quenan.duji.data.day.RepeatCycle
 import com.quenan.duji.data.day.computeStatus
 import com.quenan.duji.data.day.parseDayDate
 import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -25,12 +27,14 @@ class ThoseDaysViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val sortedDays = combine(repository.observeDays(), sortOption) { dayList, option ->
         dayList.sortedWith(dayComparator(option))
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val days = sortedDays
 
     val dayCardModels = sortedDays
         .map { dayList -> dayList.toDayCardModels() }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val currentViewMode = viewMode

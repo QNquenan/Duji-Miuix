@@ -10,9 +10,11 @@ import com.quenan.duji.data.item.buildAvgPriceText
 import com.quenan.duji.data.item.buildTotalPriceText
 import com.quenan.duji.data.item.parseItemDateToMillis
 import com.quenan.duji.data.item.toStats
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -24,12 +26,14 @@ class MyItemsViewModel(application: Application) : AndroidViewModel(application)
 
     private val sortedItems = combine(repository.observeItems(), sortOption) { itemList, option ->
         itemList.sortedWith(itemComparator(option))
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val items = sortedItems
 
     val itemCardModels = sortedItems
         .map { itemList -> itemList.toItemCardModels() }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val currentSort = sortOption
@@ -37,6 +41,7 @@ class MyItemsViewModel(application: Application) : AndroidViewModel(application)
 
     val stats = sortedItems
         .map(List<ItemData>::toStats)
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ItemStats())
 
     fun addItem(

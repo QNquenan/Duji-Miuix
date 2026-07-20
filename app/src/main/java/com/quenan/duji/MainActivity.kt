@@ -7,7 +7,6 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Box
@@ -23,7 +22,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quenan.duji.data.ReleaseNotesRepository
 import com.quenan.duji.data.AppUpdateManager
 import com.quenan.duji.data.settings.SettingsRepository
@@ -52,6 +51,7 @@ import com.quenan.duji.widget.WidgetIntentFactory
 import com.quenan.duji.widget.WidgetTargetType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -78,8 +78,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val settingsRepository = SettingsRepository(applicationContext)
         setContent {
-            val settings by settingsRepository.observeSettings().collectAsState(
-                initial = com.quenan.duji.data.settings.SettingsData()
+            val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(
+                initialValue = com.quenan.duji.data.settings.SettingsData()
             )
             val latestVersion = remember { ReleaseNotesRepository.latestVersionName(applicationContext) }
             val startPage = intent?.getIntExtra(WidgetIntentFactory.EXTRA_START_PAGE, 0) ?: 0
@@ -93,7 +93,8 @@ class MainActivity : ComponentActivity() {
 
             DuJiTheme(colorModeIndex = settings.colorModeIndex) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    PredictiveBackHandler(enabled = settings.predictiveBackEnabled) {
+                    PredictiveBackHandler(enabled = settings.predictiveBackEnabled) { progress ->
+                        progress.collect { }
                         if (duJiPagerState.handleBack()) {
                             return@PredictiveBackHandler
                         }
@@ -238,17 +239,11 @@ class DuJiPagerState(
 
         val distance = abs(targetIndex - pagerState.currentPage).coerceAtLeast(2)
         val duration = 100 * distance + 100
-        val layoutInfo = pagerState.layoutInfo
-        val pageSize = layoutInfo.pageSize + layoutInfo.pageSpacing
-        val currentDistanceInPages =
-            targetIndex - pagerState.currentPage - pagerState.currentPageOffsetFraction
-        val scrollPixels = currentDistanceInPages * pageSize
-
         navJob = coroutineScope.launch {
             val myJob = coroutineContext.job
             try {
-                pagerState.animateScrollBy(
-                    value = scrollPixels,
+                pagerState.animateScrollToPage(
+                    page = targetIndex,
                     animationSpec = tween(easing = EaseInOut, durationMillis = duration)
                 )
             } finally {

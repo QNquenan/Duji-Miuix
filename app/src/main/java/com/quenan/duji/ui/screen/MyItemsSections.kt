@@ -119,7 +119,7 @@ internal fun MyItemsContent(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
+            item(contentType = "stats") {
                 StatsCard(stats = stats)
             }
             items(
@@ -154,7 +154,10 @@ internal fun MyItemsContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            item(
+                span = { GridItemSpan(maxLineSpan) },
+                contentType = "stats",
+            ) {
                 StatsCard(stats = stats)
             }
             items(
