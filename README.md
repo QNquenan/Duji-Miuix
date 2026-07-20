@@ -62,6 +62,10 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ## 更新日志
 
+### v0.11.1
+
+- 更新应用启动图标。
+
 ### v0.11.0
 
 - 升级 Miuix 至 0.9.3，并采用 KernelSU 风格液态玻璃悬浮底栏。
