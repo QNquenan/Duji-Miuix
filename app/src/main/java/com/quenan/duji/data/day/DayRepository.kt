@@ -99,6 +99,10 @@ class DayRepository(context: Context) {
                             createdAt = obj.optLong("createdAt").takeIf { it > 0L } ?: obj.optLong("id"),
                             reminderEnabled = obj.optBoolean("reminderEnabled"),
                             reminderDaysBefore = obj.optInt("reminderDaysBefore", DEFAULT_REMINDER_DAYS_BEFORE).coerceAtLeast(0),
+                            remindOnDay = obj.optBoolean(
+                                "remindOnDay",
+                                obj.optInt("reminderDaysBefore", DEFAULT_REMINDER_DAYS_BEFORE) == 0,
+                            ),
                             reminderHour = obj.optInt("reminderHour", DEFAULT_REMINDER_HOUR).coerceIn(0, 23),
                             reminderMinute = obj.optInt("reminderMinute", DEFAULT_REMINDER_MINUTE).coerceIn(0, 59),
                         )
@@ -128,6 +132,7 @@ class DayRepository(context: Context) {
                     put("createdAt", day.createdAt)
                     put("reminderEnabled", day.reminderEnabled)
                     put("reminderDaysBefore", day.reminderDaysBefore)
+                    put("remindOnDay", day.remindOnDay)
                     put("reminderHour", day.reminderHour)
                     put("reminderMinute", day.reminderMinute)
                 }

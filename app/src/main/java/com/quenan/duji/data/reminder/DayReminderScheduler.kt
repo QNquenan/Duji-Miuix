@@ -13,6 +13,7 @@ import android.content.pm.PackageManager
 import com.quenan.duji.MainActivity
 import com.quenan.duji.data.day.DayData
 import com.quenan.duji.data.day.DayRepository
+import com.quenan.duji.data.day.nextReminderEventDate
 import com.quenan.duji.data.day.nextReminderTriggerDate
 import com.quenan.duji.data.day.reminderDaysUntil
 import com.quenan.duji.data.day.reminderNotificationText
@@ -30,6 +31,7 @@ import java.time.ZoneId
 object DayReminderScheduler {
     const val ACTION_DAY_REMINDER = "com.quenan.duji.action.DAY_REMINDER"
     const val EXTRA_DAY_ID = "day_id"
+    const val EXTRA_REMIND_ON_DAY = "remind_on_day"
 
     private const val CHANNEL_ID = "those_days_reminders"
     private const val CHANNEL_NAME = "\u90a3\u4e9b\u65e5\u5b50\u63d0\u9192"
@@ -51,20 +53,21 @@ object DayReminderScheduler {
         cancel(context, day.id)
         if (!day.reminderEnabled) return
 
-        val triggerAtMillis = nextTriggerAtMillis(day) ?: return
-        context.getSystemService(AlarmManager::class.java)
-            .setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                reminderPendingIntent(context, day.id),
-            )
+        if (day.reminderDaysBefore > 0) {
+            scheduleReminder(context, day, remindOnDay = false)
+        }
+        if (day.remindOnDay) {
+            scheduleReminder(context, day, remindOnDay = true)
+        }
     }
 
     fun cancel(context: Context, dayId: Long) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-        val pendingIntent = reminderPendingIntent(context, dayId)
-        alarmManager.cancel(pendingIntent)
-        pendingIntent.cancel()
+        listOf(false, true).forEach { remindOnDay ->
+            val pendingIntent = reminderPendingIntent(context, dayId, remindOnDay)
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        }
     }
 
     suspend fun rescheduleAll(context: Context, days: List<DayData>? = null) {
@@ -73,12 +76,16 @@ object DayReminderScheduler {
         daysToSchedule.forEach { day -> schedule(context, day) }
     }
 
-    fun showReminderIfDue(context: Context, day: DayData) {
+    fun showReminderIfDue(context: Context, day: DayData, remindOnDay: Boolean) {
         if (!day.reminderEnabled) return
+        if (remindOnDay && !day.remindOnDay) return
+        if (!remindOnDay && day.reminderDaysBefore <= 0) return
         if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        if (day.reminderDaysUntil() != day.reminderDaysBefore) return
+
+        val daysBefore = if (remindOnDay) 0 else day.reminderDaysBefore
+        if (day.reminderDaysUntil() != daysBefore) return
 
         createNotificationChannel(context)
         val contentIntent = PendingIntent.getActivity(
@@ -94,42 +101,62 @@ object DayReminderScheduler {
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("\u90a3\u4e9b\u65e5\u5b50\u63d0\u9192")
-            .setContentText(day.reminderNotificationText())
+            .setContentText(day.reminderNotificationText(daysBefore))
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
             .build()
         context.getSystemService(NotificationManager::class.java)
-            .notify(notificationRequestCode(day.id), notification)
+            .notify(notificationRequestCode(day.id, remindOnDay), notification)
     }
 
-    private fun reminderPendingIntent(context: Context, dayId: Long): PendingIntent {
+    private fun scheduleReminder(context: Context, day: DayData, remindOnDay: Boolean) {
+        val triggerAtMillis = nextTriggerAtMillis(day, remindOnDay) ?: return
+        context.getSystemService(AlarmManager::class.java)
+            .setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                reminderPendingIntent(context, day.id, remindOnDay),
+            )
+    }
+
+    private fun reminderPendingIntent(context: Context, dayId: Long, remindOnDay: Boolean): PendingIntent {
         return PendingIntent.getBroadcast(
             context,
-            notificationRequestCode(dayId),
+            notificationRequestCode(dayId, remindOnDay),
             Intent(context, DayReminderAlarmReceiver::class.java)
                 .setAction(ACTION_DAY_REMINDER)
-                .putExtra(EXTRA_DAY_ID, dayId),
+                .putExtra(EXTRA_DAY_ID, dayId)
+                .putExtra(EXTRA_REMIND_ON_DAY, remindOnDay),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
-    private fun nextTriggerAtMillis(day: DayData): Long? {
+    private fun nextTriggerAtMillis(day: DayData, remindOnDay: Boolean): Long? {
         val now = LocalDateTime.now()
         val reminderTime = LocalTime.of(
             day.reminderHour.coerceIn(0, 23),
             day.reminderMinute.coerceIn(0, 59),
         )
-        var triggerDate = day.nextReminderTriggerDate(now.toLocalDate()) ?: return null
-        if (triggerDate == now.toLocalDate() && !reminderTime.isAfter(now.toLocalTime())) {
-            triggerDate = day.nextReminderTriggerDate(now.toLocalDate().plusDays(1)) ?: return null
+        fun triggerDate(onOrAfter: LocalDate): LocalDate? = if (remindOnDay) {
+            day.nextReminderEventDate(onOrAfter)
+        } else {
+            day.nextReminderTriggerDate(onOrAfter)
         }
-        return LocalDateTime.of(triggerDate, reminderTime)
+
+        var date = triggerDate(now.toLocalDate()) ?: return null
+        if (date == now.toLocalDate() && !reminderTime.isAfter(now.toLocalTime())) {
+            date = triggerDate(now.toLocalDate().plusDays(1)) ?: return null
+        }
+        return LocalDateTime.of(date, reminderTime)
             .atZone(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
     }
 
-    private fun notificationRequestCode(dayId: Long): Int = (dayId xor (dayId ushr 32)).toInt()
+    private fun notificationRequestCode(dayId: Long, remindOnDay: Boolean = false): Int {
+        val baseCode = (dayId xor (dayId ushr 32)).toInt()
+        return if (remindOnDay) baseCode xor 0x40000000 else baseCode
+    }
 }
 
 class DayReminderAlarmReceiver : BroadcastReceiver() {
@@ -143,7 +170,11 @@ class DayReminderAlarmReceiver : BroadcastReceiver() {
                 val day = DayRepository(context.applicationContext).getAllDays()
                     .firstOrNull { it.id == dayId }
                 if (day != null) {
-                    DayReminderScheduler.showReminderIfDue(context.applicationContext, day)
+                    val remindOnDay = intent.getBooleanExtra(
+                        DayReminderScheduler.EXTRA_REMIND_ON_DAY,
+                        day.remindOnDay && day.reminderDaysBefore == 0,
+                    )
+                    DayReminderScheduler.showReminderIfDue(context.applicationContext, day, remindOnDay)
                     DayReminderScheduler.schedule(context.applicationContext, day)
                 }
             } finally {

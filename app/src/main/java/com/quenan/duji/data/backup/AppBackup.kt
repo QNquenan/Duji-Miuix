@@ -13,7 +13,7 @@ import java.time.LocalDate
 import org.json.JSONArray
 import org.json.JSONObject
 
-const val APP_BACKUP_VERSION = 3
+const val APP_BACKUP_VERSION = 4
 private const val DEFAULT_CHECK_IN_EMOJI = "🏋️"
 private const val DEFAULT_CHECK_IN_COLOR_ARGB = 0xFF5EBD7DL
 
@@ -63,6 +63,7 @@ fun AppBackup.toJsonString(): String {
                         put("createdAt", day.createdAt)
                         put("reminderEnabled", day.reminderEnabled)
                         put("reminderDaysBefore", day.reminderDaysBefore)
+                        put("remindOnDay", day.remindOnDay)
                         put("reminderHour", day.reminderHour)
                         put("reminderMinute", day.reminderMinute)
                     }
@@ -180,6 +181,10 @@ fun parseAppBackup(raw: String): AppBackup {
                     createdAt = obj.optLong("createdAt"),
                     reminderEnabled = obj.optBoolean("reminderEnabled"),
                     reminderDaysBefore = obj.optInt("reminderDaysBefore", DEFAULT_REMINDER_DAYS_BEFORE).coerceAtLeast(0),
+                    remindOnDay = obj.optBoolean(
+                        "remindOnDay",
+                        obj.optInt("reminderDaysBefore", DEFAULT_REMINDER_DAYS_BEFORE) == 0,
+                    ),
                     reminderHour = obj.optInt("reminderHour", DEFAULT_REMINDER_HOUR).coerceIn(0, 23),
                     reminderMinute = obj.optInt("reminderMinute", DEFAULT_REMINDER_MINUTE).coerceIn(0, 59),
                 )

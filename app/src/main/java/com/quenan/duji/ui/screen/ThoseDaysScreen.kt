@@ -185,6 +185,7 @@ fun ThoseDaysScreen(
     var isPinned by remember { mutableStateOf(false) }
     var reminderEnabled by remember { mutableStateOf(false) }
     var reminderDaysBefore by remember { mutableIntStateOf(3) }
+    var remindOnDay by remember { mutableStateOf(false) }
     var reminderHour by remember { mutableIntStateOf(8) }
     var reminderMinute by remember { mutableIntStateOf(0) }
     var selectedEmoji by remember { mutableStateOf<String?>(null) }
@@ -237,6 +238,7 @@ fun ThoseDaysScreen(
         isPinned = false
         reminderEnabled = false
         reminderDaysBefore = 3
+        remindOnDay = false
         reminderHour = 8
         reminderMinute = 0
         selectedEmoji = null
@@ -263,6 +265,7 @@ fun ThoseDaysScreen(
         isPinned = day.isPinned
         reminderEnabled = day.reminderEnabled
         reminderDaysBefore = day.reminderDaysBefore
+        remindOnDay = day.remindOnDay
         reminderHour = day.reminderHour
         reminderMinute = day.reminderMinute
         selectedWeekDays = day.weekDays.toSet()
@@ -614,6 +617,7 @@ fun ThoseDaysScreen(
                                     createdAt = editingDay?.createdAt ?: 0L,
                                     reminderEnabled = reminderEnabled,
                                     reminderDaysBefore = reminderDaysBefore,
+                                    remindOnDay = remindOnDay,
                                     reminderHour = reminderHour,
                                     reminderMinute = reminderMinute,
                                 )
@@ -722,7 +726,24 @@ fun ThoseDaysScreen(
                                 },
                             )
                             if (reminderEnabled) {
-                                val daysSummary = "提前 $reminderDaysBefore 天提醒"
+                                SwitchPreference(
+                                    title = "当天提醒",
+                                    summary = "在日子当天提醒",
+                                    checked = remindOnDay,
+                                    onCheckedChange = { remindOnDay = it },
+                                    startAction = {
+                                        Icon(
+                                            imageVector = MiuixIcons.Alarm,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = "当天提醒",
+                                        )
+                                    },
+                                )
+                                val daysSummary = if (reminderDaysBefore > 0) {
+                                    "提前 $reminderDaysBefore 天提醒"
+                                } else {
+                                    "未设置提前提醒"
+                                }
                                 ArrowPreference(
                                     title = "提前提醒",
                                     summary = if (isNotificationPermissionGranted) daysSummary else null,
@@ -903,7 +924,7 @@ private fun ReminderDaysDialog(
                 ),
             )
             Text(
-                text = "0 天表示当天提醒",
+                text = "0 天表示不设置提前提醒",
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
             )

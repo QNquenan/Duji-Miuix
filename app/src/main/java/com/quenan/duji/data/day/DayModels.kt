@@ -40,6 +40,7 @@ data class DayData(
     val createdAt: Long,
     val reminderEnabled: Boolean = false,
     val reminderDaysBefore: Int = DEFAULT_REMINDER_DAYS_BEFORE,
+    val remindOnDay: Boolean = false,
     val reminderHour: Int = DEFAULT_REMINDER_HOUR,
     val reminderMinute: Int = DEFAULT_REMINDER_MINUTE,
 )
@@ -292,10 +293,13 @@ private fun nextAnnualOccurrenceDate(
     return if (!thisYearDate.isBefore(onOrAfter)) thisYearDate else dateInYear(date, onOrAfter.year + 1)
 }
 
-fun DayData.reminderNotificationText(daysBefore: Int = reminderDaysBefore): String = when (type) {
-    DayType.BIRTHDAY -> "$name \u8fd8\u6709 $daysBefore \u5929\u751f\u65e5\uff01"
-    DayType.ANNIVERSARY -> "\u8ddd\u79bb $name \u8fd8\u6709 $daysBefore \u5929\uff0c\u7eaa\u5ff5\u65e5\u5feb\u5230\u4e86\uff01"
-    DayType.DAYS -> "\u8ddd\u79bb $name \u8fd8\u6709 $daysBefore \u5929\uff0c\u4e00\u8d77\u671f\u5f85\u5427\uff01"
+fun DayData.reminderNotificationText(daysBefore: Int = reminderDaysBefore): String = when {
+    daysBefore == 0 && type == DayType.BIRTHDAY -> "\u4eca\u5929\u662f $name \u7684\u751f\u65e5\uff01"
+    daysBefore == 0 && type == DayType.ANNIVERSARY -> "\u4eca\u5929\u662f $name \u7684\u7eaa\u5ff5\u65e5\uff01"
+    daysBefore == 0 -> "$name \u5c31\u662f\u4eca\u5929\uff01"
+    type == DayType.BIRTHDAY -> "$name \u8fd8\u6709 $daysBefore \u5929\u751f\u65e5\uff01"
+    type == DayType.ANNIVERSARY -> "\u8ddd\u79bb $name \u8fd8\u6709 $daysBefore \u5929\uff0c\u7eaa\u5ff5\u65e5\u5feb\u5230\u4e86\uff01"
+    else -> "\u8ddd\u79bb $name \u8fd8\u6709 $daysBefore \u5929\uff0c\u4e00\u8d77\u671f\u5f85\u5427\uff01"
 }
 
 private fun DayData.nextWeeklyReminderDays(today: LocalDate): Int? {

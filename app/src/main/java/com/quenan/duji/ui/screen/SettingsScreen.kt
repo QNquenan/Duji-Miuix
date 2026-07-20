@@ -70,6 +70,7 @@ import java.util.Locale
 
 @Composable
 fun SettingsScreen(
+    contentPadding: PaddingValues = PaddingValues(),
     versionName: String,
     selectedColorModeIndex: Int,
     predictiveBackEnabled: Boolean,
@@ -176,6 +177,7 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
+                .padding(contentPadding)
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

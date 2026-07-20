@@ -3,6 +3,7 @@ package com.quenan.duji.ui.component
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -15,9 +16,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -61,13 +60,10 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
@@ -444,22 +440,28 @@ private fun CheckInDayCell(
 ) {
     val primaryColor = MiuixTheme.colorScheme.onBackground
     val mutedColor = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.28f)
+    val shape = RoundedCornerShape(12.dp)
+    val isActiveSelection = isSelected && !isToday
+    val backgroundColor = badgeColor?.copy(alpha = 0.16f)
+        ?: if (isActiveSelection) MiuixTheme.colorScheme.primary else Color.Transparent
+    val todayBorderColor = badgeColor ?: MiuixTheme.colorScheme.primary
     val dayColor = when {
-        isSelected -> MiuixTheme.colorScheme.onPrimary
+        isActiveSelection -> MiuixTheme.colorScheme.onPrimary
         !isCurrentMonth -> mutedColor
         isWeekend -> weekendColor
         else -> primaryColor
     }
     val lunarColor = when {
-        isSelected -> MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+        isActiveSelection -> MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
         !isCurrentMonth -> mutedColor
         else -> MiuixTheme.colorScheme.onBackgroundVariant
     }
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) MiuixTheme.colorScheme.primary else Color.Transparent)
+            .clip(shape)
+            .background(backgroundColor)
+            .then(if (isToday) Modifier.border(1.dp, todayBorderColor, shape) else Modifier)
             .clickable(onClick = onClick)
             .padding(vertical = 2.dp),
     ) {
@@ -482,24 +484,6 @@ private fun CheckInDayCell(
                 maxLines = 1,
                 textAlign = TextAlign.Center,
             )
-        }
-        badgeColor?.let { color ->
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 2.dp, end = 2.dp)
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(color),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Ok,
-                    contentDescription = "已打卡",
-                    modifier = Modifier.size(10.dp),
-                    tint = Color.White,
-                )
-            }
         }
     }
 }

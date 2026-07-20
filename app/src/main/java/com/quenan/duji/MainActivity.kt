@@ -245,6 +245,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 3 -> if (isCurrentPage || contentReady) {
                                     SettingsScreen(
+                                        contentPadding = PaddingValues(bottom = bottomPadding),
                                         versionName = latestVersion,
                                         selectedColorModeIndex = settings.colorModeIndex,
                                         predictiveBackEnabled = settings.predictiveBackEnabled,
