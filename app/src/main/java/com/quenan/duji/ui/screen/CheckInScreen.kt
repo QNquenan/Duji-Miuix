@@ -1,17 +1,13 @@
 package com.quenan.duji.ui.screen
 
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,9 +37,12 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,9 +54,8 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.abs
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -95,7 +94,9 @@ fun CheckInScreen(
     }
     var selectedDate by remember { mutableStateOf(today) }
     var showMonthPicker by remember { mutableStateOf(false) }
-    var isCalendarCollapsed by remember { mutableStateOf(false) }
+    var collapseProgress by remember { mutableFloatStateOf(0f) }
+    val collapseAnimationJob = remember { mutableStateOf<Job?>(null) }
+    val collapseDistancePx = with(LocalDensity.current) { 240.dp.toPx() }
 
     LaunchedEffect(calendarPagerState, baseMonth) {
         snapshotFlow { calendarPagerState.settledPage }
@@ -145,56 +146,57 @@ fun CheckInScreen(
                 .padding(contentPadding)
                 .padding(horizontal = 20.dp),
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(0.dp),
-                colors = CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.surfaceContainer,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                        .padding(top = 4.dp, bottom = 10.dp)
-                        .pointerInput(isCalendarCollapsed) {
-                            var totalDrag = 0f
-                            detectVerticalDragGestures(
-                                onVerticalDrag = { _, dragAmount ->
-                                    totalDrag += dragAmount
-                                },
-                                onDragEnd = {
-                                    if (abs(totalDrag) >= 48.dp.toPx()) {
-                                        isCalendarCollapsed = totalDrag < 0f
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        var totalDrag = 0f
+                        detectVerticalDragGestures(
+                            onVerticalDrag = { _, dragAmount ->
+                                collapseAnimationJob.value?.cancel()
+                                totalDrag += dragAmount
+                                collapseProgress = (collapseProgress - dragAmount / collapseDistancePx)
+                                    .coerceIn(0f, 1f)
+                            },
+                            onDragEnd = {
+                                if (abs(totalDrag) >= 48.dp.toPx()) {
+                                    val target = if (collapseProgress >= 0.5f) 1f else 0f
+                                    collapseAnimationJob.value = coroutineScope.launch {
+                                        val animation = Animatable(collapseProgress)
+                                        animation.animateTo(target, animationSpec = tween(260)) {
+                                            collapseProgress = value
+                                        }
                                     }
-                                },
-                                onDragCancel = {},
-                            )
-                        },
-                ) {
-                    HorizontalPager(
-                        state = calendarPagerState,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { page ->
-                        CalendarMonthContent(
-                            month = calendarMonthForPage(page, baseMonth),
-                            today = today,
-                            selectedDate = selectedDate,
-                            isCollapsed = isCalendarCollapsed,
-                            onMonthClick = { showMonthPicker = true },
-                            onDateClick = { selectedDate = it },
+                                }
+                            },
+                            onDragCancel = {
+                                collapseAnimationJob.value?.cancel()
+                            },
                         )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .width(36.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.42f)),
+                    },
+            ) {
+                HorizontalPager(
+                    state = calendarPagerState,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { page ->
+                    CalendarMonthContent(
+                        month = calendarMonthForPage(page, baseMonth),
+                        today = today,
+                        selectedDate = selectedDate,
+                        collapseProgress = collapseProgress,
+                        onMonthClick = { showMonthPicker = true },
+                        onDateClick = { selectedDate = it },
                     )
                 }
+                Spacer(modifier = Modifier.height(24.dp))
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .width(36.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.42f)),
+                )
             }
         }
     }
@@ -215,7 +217,7 @@ private fun CalendarMonthContent(
     month: YearMonth,
     today: LocalDate,
     selectedDate: LocalDate,
-    isCollapsed: Boolean,
+    collapseProgress: Float,
     onMonthClick: () -> Unit,
     onDateClick: (LocalDate) -> Unit,
 ) {
@@ -254,33 +256,21 @@ private fun CalendarMonthContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        AnimatedContent(
-            targetState = isCollapsed,
-            transitionSpec = {
-                if (targetState) {
-                    (slideInVertically(tween(260)) { it / 2 } + fadeIn(tween(180))) togetherWith
-                        (slideOutVertically(tween(260)) { -it / 2 } + fadeOut(tween(180)))
-                } else {
-                    (slideInVertically(tween(260)) { -it / 2 } + fadeIn(tween(180))) togetherWith
-                        (slideOutVertically(tween(260)) { it / 2 } + fadeOut(tween(180)))
-                }
-            },
-            label = "日历折叠",
-        ) { collapsed ->
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val rowHeight = (maxWidth - 24.dp) / 7f
+            val expandedHeight = rowHeight * 5 + 32.dp
+            val gridHeight = expandedHeight * (1f - collapseProgress) + rowHeight * collapseProgress
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(gridHeight)
+                    .clipToBounds(),
             ) {
-                if (collapsed) {
-                    CalendarWeekRow(
-                        month = month,
-                        gridStart = gridStart,
-                        weekIndex = collapsedWeekIndex,
-                        today = today,
-                        selectedDate = selectedDate,
-                        onDateClick = onDateClick,
-                    )
-                } else {
+                Column(
+                    modifier = Modifier.graphicsLayer { alpha = 1f - collapseProgress },
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     repeat(5) { weekIndex ->
                         CalendarWeekRow(
                             month = month,
@@ -292,6 +282,15 @@ private fun CalendarMonthContent(
                         )
                     }
                 }
+                CalendarWeekRow(
+                    month = month,
+                    gridStart = gridStart,
+                    weekIndex = collapsedWeekIndex,
+                    today = today,
+                    selectedDate = selectedDate,
+                    onDateClick = onDateClick,
+                    modifier = Modifier.graphicsLayer { alpha = collapseProgress },
+                )
             }
         }
     }
@@ -305,9 +304,10 @@ private fun CalendarWeekRow(
     today: LocalDate,
     selectedDate: LocalDate,
     onDateClick: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         repeat(7) { dayIndex ->
