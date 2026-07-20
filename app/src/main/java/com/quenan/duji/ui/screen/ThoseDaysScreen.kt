@@ -697,6 +697,75 @@ fun ThoseDaysScreen(
                     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)) {
                         SwitchPreference(title = "置顶", checked = isPinned, onCheckedChange = { isPinned = it })
                     }
+
+                    SmallTitle(
+                        text = "提醒",
+                        insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            SwitchPreference(
+                                title = "日子提醒",
+                                summary = "默认关闭",
+                                checked = reminderEnabled,
+                                onCheckedChange = { reminderEnabled = it },
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Alarm,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = "日子提醒",
+                                    )
+                                },
+                            )
+                            if (reminderEnabled) {
+                                val daysSummary = "提前 $reminderDaysBefore 天提醒"
+                                ArrowPreference(
+                                    title = "提前提醒",
+                                    summary = if (isNotificationPermissionGranted) daysSummary else null,
+                                    bottomAction = if (isNotificationPermissionGranted) null else {
+                                        {
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text(
+                                                    text = daysSummary,
+                                                    style = MiuixTheme.textStyles.body2,
+                                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                                )
+                                                Text(
+                                                    text = "未授予通知权限",
+                                                    style = MiuixTheme.textStyles.body2,
+                                                    color = Color(0xFFFF453A),
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = { showReminderDaysDialog = true },
+                                    startAction = {
+                                        Icon(
+                                            imageVector = MiuixIcons.Alarm,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = "提前提醒",
+                                        )
+                                    },
+                                )
+                                ArrowPreference(
+                                    title = "提醒时间",
+                                    summary = "每天 ${reminderHour.toString().padStart(2, '0')}:${reminderMinute.toString().padStart(2, '0')}",
+                                    onClick = { showReminderTimeDialog = true },
+                                    startAction = {
+                                        Icon(
+                                            imageVector = MiuixIcons.Timer,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = "提醒时间",
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
