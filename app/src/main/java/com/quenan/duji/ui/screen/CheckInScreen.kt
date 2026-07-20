@@ -81,6 +81,8 @@ private const val CALENDAR_INITIAL_PAGE = CALENDAR_PAGE_COUNT / 2
 private const val CALENDAR_DEFAULT_WEEK_COUNT = 6
 private const val CALENDAR_BEYOND_VIEWPORT_PAGE_COUNT = 1
 private const val EXERCISE_DAY_COUNT = 31
+private const val EXERCISE_MONTH_COUNT = 5
+private const val EXERCISE_TOTAL_COUNT = 66
 private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
@@ -243,6 +245,7 @@ fun CheckInScreen(
 @Composable
 private fun ExerciseCard() {
     val inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.35f)
+    val totalCountBackground = exerciseCompletedColor.copy(alpha = 0.18f)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -251,16 +254,54 @@ private fun ExerciseCard() {
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = "运动",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MiuixTheme.colorScheme.onBackground,
-            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    modifier = Modifier.size(32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = "🏋️", fontSize = 26.sp)
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "运动",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MiuixTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = "${EXERCISE_MONTH_COUNT}/月",
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(totalCountBackground)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "${EXERCISE_TOTAL_COUNT}次",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = exerciseCompletedColor,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 44.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
