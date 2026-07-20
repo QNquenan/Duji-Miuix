@@ -1,18 +1,25 @@
 package com.quenan.duji.data.backup
 
+import com.quenan.duji.data.checkin.CheckInItem
+import com.quenan.duji.data.checkin.CheckInRecord
 import com.quenan.duji.data.day.DayData
 import com.quenan.duji.data.day.DayType
 import com.quenan.duji.data.day.RepeatCycle
 import com.quenan.duji.data.item.ItemData
+import java.time.LocalDate
 import org.json.JSONArray
 import org.json.JSONObject
 
-const val APP_BACKUP_VERSION = 1
+const val APP_BACKUP_VERSION = 2
+private const val DEFAULT_CHECK_IN_EMOJI = "🏋️"
+private const val DEFAULT_CHECK_IN_COLOR_ARGB = 0xFF5EBD7DL
 
 data class AppBackup(
     val version: Int,
     val items: List<ItemData>,
     val days: List<DayData>,
+    val checkInItems: List<CheckInItem>,
+    val checkInRecords: List<CheckInRecord>,
 )
 
 fun AppBackup.toJsonString(): String {
@@ -55,6 +62,29 @@ fun AppBackup.toJsonString(): String {
                 )
             }
         })
+        put("checkInItems", JSONArray().apply {
+            checkInItems.forEach { item ->
+                put(
+                    JSONObject().apply {
+                        put("id", item.id)
+                        put("emoji", item.emoji)
+                        put("name", item.name)
+                        put("colorArgb", item.colorArgb)
+                        put("createdAt", item.createdAt)
+                    }
+                )
+            }
+        })
+        put("checkInRecords", JSONArray().apply {
+            checkInRecords.forEach { record ->
+                put(
+                    JSONObject().apply {
+                        put("itemId", record.itemId)
+                        put("date", record.date)
+                    }
+                )
+            }
+        })
     }.toString()
 }
 
@@ -72,15 +102,25 @@ fun parseAppBackup(raw: String): AppBackup {
         ?: throw IllegalArgumentException("备份文件中的 items 不是数组")
     val daysArray = json.optJSONArray("days")
         ?: throw IllegalArgumentException("备份文件中的 days 不是数组")
+    val checkInItemsArray = when {
+        version == 1 -> JSONArray()
+        else -> json.optJSONArray("checkInItems")
+            ?: throw IllegalArgumentException("备份文件中的 checkInItems 不是数组")
+    }
+    val checkInRecordsArray = when {
+        version == 1 -> JSONArray()
+        else -> json.optJSONArray("checkInRecords")
+            ?: throw IllegalArgumentException("备份文件中的 checkInRecords 不是数组")
+    }
 
     val items = buildList(itemsArray.length()) {
         for (index in 0 until itemsArray.length()) {
             val obj = itemsArray.optJSONObject(index)
-                ?: throw IllegalArgumentException("items[$index] 不是对象")
+                ?: throw IllegalArgumentException("items[${index}] 不是对象")
             val name = obj.optString("name").trim()
-            require(name.isNotEmpty()) { "items[$index].name 不能为空" }
+            require(name.isNotEmpty()) { "items[${index}].name 不能为空" }
             val date = obj.optString("date").trim()
-            require(date.isNotEmpty()) { "items[$index].date 不能为空" }
+            require(date.isNotEmpty()) { "items[${index}].date 不能为空" }
             add(
                 ItemData(
                     id = obj.optLong("id"),
@@ -99,19 +139,19 @@ fun parseAppBackup(raw: String): AppBackup {
     val days = buildList(daysArray.length()) {
         for (index in 0 until daysArray.length()) {
             val obj = daysArray.optJSONObject(index)
-                ?: throw IllegalArgumentException("days[$index] 不是对象")
+                ?: throw IllegalArgumentException("days[${index}] 不是对象")
             val weekDaysArray = obj.optJSONArray("weekDays") ?: JSONArray()
             val monthDaysArray = obj.optJSONArray("monthDays") ?: JSONArray()
             val name = obj.optString("name").trim()
-            require(name.isNotEmpty()) { "days[$index].name 不能为空" }
+            require(name.isNotEmpty()) { "days[${index}].name 不能为空" }
             val targetDate = obj.optString("targetDate").trim()
-            require(targetDate.isNotEmpty()) { "days[$index].targetDate 不能为空" }
+            require(targetDate.isNotEmpty()) { "days[${index}].targetDate 不能为空" }
             val typeName = obj.optString("type", DayType.DAYS.name)
             val repeatCycleName = obj.optString("repeatCycle", RepeatCycle.NONE.name)
             val dayType = runCatching { DayType.valueOf(typeName) }
-                .getOrElse { throw IllegalArgumentException("days[$index].type 无效：$typeName") }
+                .getOrElse { throw IllegalArgumentException("days[${index}].type 无效：${typeName}") }
             val repeatCycle = runCatching { RepeatCycle.valueOf(repeatCycleName) }
-                .getOrElse { throw IllegalArgumentException("days[$index].repeatCycle 无效：$repeatCycleName") }
+                .getOrElse { throw IllegalArgumentException("days[${index}].repeatCycle 无效：${repeatCycleName}") }
             add(
                 DayData(
                     id = obj.optLong("id"),
@@ -136,9 +176,46 @@ fun parseAppBackup(raw: String): AppBackup {
         }
     }
 
+    val checkInItems = buildList(checkInItemsArray.length()) {
+        for (index in 0 until checkInItemsArray.length()) {
+            val obj = checkInItemsArray.optJSONObject(index)
+                ?: throw IllegalArgumentException("checkInItems[${index}] 不是对象")
+            val name = obj.optString("name").trim()
+            require(name.isNotEmpty()) { "checkInItems[${index}].name 不能为空" }
+            add(
+                CheckInItem(
+                    id = obj.optLong("id"),
+                    emoji = obj.optString("emoji", DEFAULT_CHECK_IN_EMOJI),
+                    name = name,
+                    colorArgb = obj.optLong("colorArgb", DEFAULT_CHECK_IN_COLOR_ARGB),
+                    createdAt = obj.optLong("createdAt"),
+                )
+            )
+        }
+    }
+
+    val checkInRecords = buildList(checkInRecordsArray.length()) {
+        for (index in 0 until checkInRecordsArray.length()) {
+            val obj = checkInRecordsArray.optJSONObject(index)
+                ?: throw IllegalArgumentException("checkInRecords[${index}] 不是对象")
+            val date = obj.optString("date").trim()
+            require(date.isNotEmpty()) { "checkInRecords[${index}].date 不能为空" }
+            runCatching { LocalDate.parse(date) }
+                .getOrElse { throw IllegalArgumentException("checkInRecords[${index}].date 格式无效：${date}") }
+            add(
+                CheckInRecord(
+                    itemId = obj.optLong("itemId"),
+                    date = date,
+                )
+            )
+        }
+    }
+
     return AppBackup(
         version = version,
         items = items,
         days = days,
+        checkInItems = checkInItems,
+        checkInRecords = checkInRecords,
     )
 }

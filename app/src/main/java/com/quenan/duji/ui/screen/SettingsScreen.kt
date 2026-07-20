@@ -31,6 +31,7 @@ import com.quenan.duji.data.backup.APP_BACKUP_VERSION
 import com.quenan.duji.data.backup.AppBackup
 import com.quenan.duji.data.backup.parseAppBackup
 import com.quenan.duji.data.backup.toJsonString
+import com.quenan.duji.data.checkin.CheckInRepository
 import com.quenan.duji.data.day.DayRepository
 import com.quenan.duji.data.item.ItemRepository
 import com.quenan.duji.data.AppUpdateManager
@@ -83,6 +84,7 @@ fun SettingsScreen(
     val coroutineScope = rememberCoroutineScope()
     val itemRepository = remember(appContext) { ItemRepository(appContext) }
     val dayRepository = remember(appContext) { DayRepository(appContext) }
+    val checkInRepository = remember(appContext) { CheckInRepository(appContext) }
     val timestamp = remember {
         SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.getDefault()).format(Date())
     }
@@ -103,15 +105,25 @@ fun SettingsScreen(
                     version = APP_BACKUP_VERSION,
                     items = itemRepository.getAllItems(),
                     days = dayRepository.getAllDays(),
+                    checkInItems = checkInRepository.getAllItems(),
+                    checkInRecords = checkInRepository.getAllRecords(),
                 )
                 val json = backup.toJsonString()
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                     outputStream.write(json.toByteArray(StandardCharsets.UTF_8))
                     outputStream.flush()
                 } ?: error("无法打开导出位置")
-                Triple(backup.items.size, backup.days.size, exportFileName)
-            }.onSuccess { (itemCount, dayCount, fileName) ->
-                showNotice("导出成功：${fileName}（备份 v${APP_BACKUP_VERSION}，物品 ${itemCount} 条，日子 ${dayCount} 条）")
+                BackupExportResult(
+                    itemCount = backup.items.size,
+                    dayCount = backup.days.size,
+                    checkInItemCount = backup.checkInItems.size,
+                    checkInRecordCount = backup.checkInRecords.size,
+                    fileName = exportFileName,
+                )
+            }.onSuccess { result ->
+                showNotice(
+                    "导出成功：${result.fileName}（备份 v${APP_BACKUP_VERSION}，物品 ${result.itemCount} 条，日子 ${result.dayCount} 条，打卡项 ${result.checkInItemCount} 条，打卡记录 ${result.checkInRecordCount} 条）"
+                )
             }.onFailure { throwable ->
                 showNotice("导出失败：${throwable.message ?: "未知错误"}")
             }
@@ -129,9 +141,18 @@ fun SettingsScreen(
                 val backup = parseAppBackup(raw)
                 itemRepository.importItems(backup.items)
                 dayRepository.importDays(backup.days)
-                Triple(backup.version, backup.items.size, backup.days.size)
-            }.onSuccess { (backupVersion, itemCount, dayCount) ->
-                showNotice("导入成功：备份 v${backupVersion}，物品 ${itemCount} 条，日子 ${dayCount} 条")
+                checkInRepository.importData(backup.checkInItems, backup.checkInRecords)
+                BackupImportResult(
+                    version = backup.version,
+                    itemCount = backup.items.size,
+                    dayCount = backup.days.size,
+                    checkInItemCount = backup.checkInItems.size,
+                    checkInRecordCount = backup.checkInRecords.size,
+                )
+            }.onSuccess { result ->
+                showNotice(
+                    "导入成功：备份 v${result.version}，物品 ${result.itemCount} 条，日子 ${result.dayCount} 条，打卡项 ${result.checkInItemCount} 条，打卡记录 ${result.checkInRecordCount} 条"
+                )
             }.onFailure { throwable ->
                 showNotice("导入失败：${throwable.message ?: "未知错误"}")
             }
@@ -355,3 +376,20 @@ fun SettingsScreen(
         }
     }
 }
+
+
+private data class BackupExportResult(
+    val itemCount: Int,
+    val dayCount: Int,
+    val checkInItemCount: Int,
+    val checkInRecordCount: Int,
+    val fileName: String,
+)
+
+private data class BackupImportResult(
+    val version: Int,
+    val itemCount: Int,
+    val dayCount: Int,
+    val checkInItemCount: Int,
+    val checkInRecordCount: Int,
+)
