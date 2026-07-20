@@ -43,37 +43,9 @@ class ThoseDaysViewModel(application: Application) : AndroidViewModel(applicatio
     val currentSort = sortOption
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DaySortOption.default())
 
-    fun addDay(
-        emoji: String,
-        emojiName: String,
-        name: String,
-        type: DayType,
-        repeatCycle: RepeatCycle,
-        targetDate: String,
-        note: String,
-        weekDays: List<Int>,
-        monthDays: List<Int>,
-        isLunar: Boolean,
-        isPinned: Boolean,
-    ) {
+    fun addDay(day: DayData) {
         viewModelScope.launch {
-            repository.addDay(
-                DayData(
-                    id = 0L,
-                    emoji = emoji,
-                    emojiName = emojiName,
-                    name = name.trim(),
-                    type = type,
-                    repeatCycle = repeatCycle,
-                    targetDate = targetDate,
-                    note = note,
-                    weekDays = weekDays,
-                    monthDays = monthDays,
-                    isLunar = isLunar,
-                    isPinned = isPinned,
-                    createdAt = 0L,
-                )
-            )
+            repository.addDay(day)
         }
     }
 

@@ -2,6 +2,9 @@ package com.quenan.duji.data.backup
 
 import com.quenan.duji.data.checkin.CheckInItem
 import com.quenan.duji.data.checkin.CheckInRecord
+import com.quenan.duji.data.day.DEFAULT_REMINDER_DAYS_BEFORE
+import com.quenan.duji.data.day.DEFAULT_REMINDER_HOUR
+import com.quenan.duji.data.day.DEFAULT_REMINDER_MINUTE
 import com.quenan.duji.data.day.DayData
 import com.quenan.duji.data.day.DayType
 import com.quenan.duji.data.day.RepeatCycle
@@ -10,7 +13,7 @@ import java.time.LocalDate
 import org.json.JSONArray
 import org.json.JSONObject
 
-const val APP_BACKUP_VERSION = 2
+const val APP_BACKUP_VERSION = 3
 private const val DEFAULT_CHECK_IN_EMOJI = "🏋️"
 private const val DEFAULT_CHECK_IN_COLOR_ARGB = 0xFF5EBD7DL
 
@@ -58,6 +61,10 @@ fun AppBackup.toJsonString(): String {
                         put("isLunar", day.isLunar)
                         put("isPinned", day.isPinned)
                         put("createdAt", day.createdAt)
+                        put("reminderEnabled", day.reminderEnabled)
+                        put("reminderDaysBefore", day.reminderDaysBefore)
+                        put("reminderHour", day.reminderHour)
+                        put("reminderMinute", day.reminderMinute)
                     }
                 )
             }
@@ -171,6 +178,10 @@ fun parseAppBackup(raw: String): AppBackup {
                     isLunar = obj.optBoolean("isLunar"),
                     isPinned = obj.optBoolean("isPinned"),
                     createdAt = obj.optLong("createdAt"),
+                    reminderEnabled = obj.optBoolean("reminderEnabled"),
+                    reminderDaysBefore = obj.optInt("reminderDaysBefore", DEFAULT_REMINDER_DAYS_BEFORE).coerceAtLeast(0),
+                    reminderHour = obj.optInt("reminderHour", DEFAULT_REMINDER_HOUR).coerceIn(0, 23),
+                    reminderMinute = obj.optInt("reminderMinute", DEFAULT_REMINDER_MINUTE).coerceIn(0, 59),
                 )
             )
         }

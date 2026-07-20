@@ -4,6 +4,7 @@ import com.quenan.duji.ui.util.LunarDate
 import com.quenan.duji.ui.util.lunarToSolar
 import com.quenan.duji.ui.util.solarToLunar
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 enum class DayType {
@@ -19,6 +20,10 @@ enum class RepeatCycle {
     YEARLY,
 }
 
+const val DEFAULT_REMINDER_DAYS_BEFORE = 3
+const val DEFAULT_REMINDER_HOUR = 8
+const val DEFAULT_REMINDER_MINUTE = 0
+
 data class DayData(
     val id: Long,
     val emoji: String,
@@ -33,6 +38,10 @@ data class DayData(
     val isLunar: Boolean,
     val isPinned: Boolean,
     val createdAt: Long,
+    val reminderEnabled: Boolean = false,
+    val reminderDaysBefore: Int = DEFAULT_REMINDER_DAYS_BEFORE,
+    val reminderHour: Int = DEFAULT_REMINDER_HOUR,
+    val reminderMinute: Int = DEFAULT_REMINDER_MINUTE,
 )
 
 data class DayStatus(
@@ -192,6 +201,76 @@ fun DayData.computeStatus(today: LocalDate = LocalDate.now()): DayStatus {
         diff == 0 -> DayStatus(0, targetDateFormatted(), "就是今天！")
         else -> DayStatus(diff, targetDateFormatted(), "已经 ${-diff} 天")
     }
+}
+
+/** Returns the number of whole days until the next occurrence that can produce a reminder. */
+fun DayData.reminderDaysUntil(today: LocalDate = LocalDate.now()): Int? {
+    val date = parseDayDate(targetDate) ?: return null
+
+    return when (type) {
+        DayType.BIRTHDAY -> nextAnnualOccurrence(date, today, isLunar)
+        DayType.ANNIVERSARY -> nextAnnualOccurrence(date, today, isLunar)
+        DayType.DAYS -> when (repeatCycle) {
+            RepeatCycle.NONE -> date.takeIf { !it.isBefore(today) }
+                ?.let { ChronoUnit.DAYS.between(today, it).toInt() }
+            RepeatCycle.WEEKLY -> nextWeeklyReminderDays(today)
+            RepeatCycle.MONTHLY -> nextMonthlyReminderDays(today)
+            RepeatCycle.YEARLY -> nextAnnualOccurrence(date, today, isLunar)
+        }
+    }
+}
+
+fun DayData.reminderNotificationText(daysBefore: Int = reminderDaysBefore): String = when (type) {
+    DayType.BIRTHDAY -> "$name \u8fd8\u6709 $daysBefore \u5929\u751f\u65e5\uff01"
+    DayType.ANNIVERSARY -> "\u8ddd\u79bb $name \u8fd8\u6709 $daysBefore \u5929\uff0c\u7eaa\u5ff5\u65e5\u5feb\u5230\u4e86\uff01"
+    DayType.DAYS -> "\u8ddd\u79bb $name \u8fd8\u6709 $daysBefore \u5929\uff0c\u4e00\u8d77\u671f\u5f85\u5427\uff01"
+}
+
+private fun DayData.nextWeeklyReminderDays(today: LocalDate): Int? {
+    if (weekDays.isEmpty()) return null
+    val todayWeek = (today.dayOfWeek.value + 6) % 7
+    return (0..6).firstOrNull { offset -> weekDays.contains((todayWeek + offset) % 7) }
+}
+
+private fun DayData.nextMonthlyReminderDays(today: LocalDate): Int? {
+    if (monthDays.isEmpty()) return null
+    val sortedDays = monthDays.sorted()
+    sortedDays.forEach { day ->
+        val eventDate = LocalDate.of(today.year, today.monthValue, day.coerceAtMost(today.lengthOfMonth()))
+        if (!eventDate.isBefore(today)) {
+            return ChronoUnit.DAYS.between(today, eventDate).toInt()
+        }
+    }
+    val nextMonth = today.plusMonths(1)
+    val nextDay = sortedDays.first().coerceAtMost(nextMonth.lengthOfMonth())
+    val eventDate = LocalDate.of(nextMonth.year, nextMonth.monthValue, nextDay)
+    return ChronoUnit.DAYS.between(today, eventDate).toInt()
+}
+
+private fun nextAnnualOccurrence(
+    date: LocalDate,
+    today: LocalDate,
+    isLunar: Boolean,
+): Int? {
+    if (isLunar) {
+        val lunar = solarToLunar(date.year, date.monthValue, date.dayOfMonth) ?: return null
+        val thisYear = safeLunarToSolar(today.year, lunar.month, lunar.day)
+        val nextDate = if (thisYear != null && !thisYear.isBefore(today)) {
+            thisYear
+        } else {
+            safeLunarToSolar(today.year + 1, lunar.month, lunar.day)
+        } ?: return null
+        return ChronoUnit.DAYS.between(today, nextDate).toInt()
+    }
+
+    val thisYearDate = dateInYear(date, today.year)
+    val nextDate = if (!thisYearDate.isBefore(today)) thisYearDate else dateInYear(date, today.year + 1)
+    return ChronoUnit.DAYS.between(today, nextDate).toInt()
+}
+
+private fun dateInYear(source: LocalDate, year: Int): LocalDate {
+    val month = YearMonth.of(year, source.monthValue)
+    return month.atDay(source.dayOfMonth.coerceAtMost(month.lengthOfMonth()))
 }
 
 fun parseDayDate(dateString: String): LocalDate? {

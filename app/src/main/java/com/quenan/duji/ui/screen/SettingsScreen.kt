@@ -37,6 +37,7 @@ import com.quenan.duji.data.item.ItemRepository
 import com.quenan.duji.data.AppUpdateManager
 import com.quenan.duji.data.ReleaseNoteEntry
 import com.quenan.duji.data.ReleaseNotesRepository
+import com.quenan.duji.ui.component.UpdateAvailableDialog
 import com.quenan.duji.ui.component.rememberNoticeAction
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -72,8 +73,10 @@ fun SettingsScreen(
     versionName: String,
     selectedColorModeIndex: Int,
     predictiveBackEnabled: Boolean,
+    autoCheckUpdates: Boolean,
     onSelectedColorModeChange: (Int) -> Unit,
     onPredictiveBackEnabledChange: (Boolean) -> Unit,
+    onAutoCheckUpdatesChange: (Boolean) -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
@@ -234,6 +237,27 @@ fun SettingsScreen(
                 }
             }
 
+            SmallTitle(text = "更新", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(0.dp),
+                colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+            ) {
+                SwitchPreference(
+                    title = "自动检查更新",
+                    summary = "每天首次打开时检查新版本",
+                    checked = autoCheckUpdates,
+                    onCheckedChange = onAutoCheckUpdatesChange,
+                    startAction = {
+                        Icon(
+                            imageVector = MiuixIcons.Info,
+                            modifier = Modifier.padding(end = 6.dp),
+                            contentDescription = "自动检查更新",
+                        )
+                    },
+                )
+            }
+
             SmallTitle(text = "关于", insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp), modifier = Modifier.fillMaxWidth())
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -312,64 +336,22 @@ fun SettingsScreen(
             }
 
             latestRelease?.let { release ->
-                WindowDialog(
-                    title = "发现新版本",
-                    show = true,
-                    onDismissRequest = { latestRelease = null },
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "远端版本：${release.title}",
-                            style = MiuixTheme.textStyles.body2,
-                        )
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 360.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            if (release.items.isEmpty()) {
-                                Text(text = "暂无更新日志")
-                            } else {
-                                release.items.forEach { item ->
-                                    Text(text = "• $item")
-                                }
+                UpdateAvailableDialog(
+                    release = release,
+                    onDismiss = { latestRelease = null },
+                    onUpdate = { targetRelease ->
+                        latestRelease = null
+                        coroutineScope.launch {
+                            runCatching {
+                                AppUpdateManager.enqueue(context, targetRelease.title)
+                            }.onSuccess {
+                                showNotice("已开始下载更新")
+                            }.onFailure {
+                                showNotice("下载更新失败：${it.message ?: "未知错误"}")
                             }
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            TextButton(
-                                text = "取消",
-                                onClick = { latestRelease = null },
-                                modifier = Modifier.weight(1f),
-                            )
-                            TextButton(
-                                text = "更新",
-                                onClick = {
-                                    val targetRelease = release
-                                    latestRelease = null
-                                    coroutineScope.launch {
-                                        runCatching {
-                                            AppUpdateManager.enqueue(context, targetRelease.title)
-                                        }.onSuccess {
-                                            showNotice("已开始下载更新")
-                                        }.onFailure {
-                                            showNotice("下载更新失败：${it.message ?: "未知错误"}")
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.textButtonColorsPrimary(),
-                            )
-                        }
-                    }
-                }
+                    },
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

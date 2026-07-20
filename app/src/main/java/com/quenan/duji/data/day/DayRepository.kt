@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.quenan.duji.data.reminder.DayReminderScheduler
 import com.quenan.duji.widget.refreshWidgetsAsync
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -23,12 +24,15 @@ class DayRepository(context: Context) {
     }
 
     suspend fun addDay(day: DayData) {
+        var savedDay: DayData? = null
         dataStore.edit { preferences ->
             val days = decodeDays(preferences[DAYS_KEY].orEmpty()).toMutableList()
             val nextId = (days.maxOfOrNull(DayData::id) ?: 0L) + 1L
-            days.add(day.copy(id = nextId, createdAt = System.currentTimeMillis()))
+            savedDay = day.copy(id = nextId, createdAt = System.currentTimeMillis())
+            days.add(requireNotNull(savedDay))
             preferences[DAYS_KEY] = encodeDays(days)
         }
+        DayReminderScheduler.schedule(appContext, requireNotNull(savedDay))
         appContext.refreshWidgetsAsync()
     }
 
@@ -39,6 +43,7 @@ class DayRepository(context: Context) {
             }
             preferences[DAYS_KEY] = encodeDays(updated)
         }
+        DayReminderScheduler.schedule(appContext, day)
         appContext.refreshWidgetsAsync()
     }
 
@@ -48,6 +53,7 @@ class DayRepository(context: Context) {
                 .filterNot { current -> current.id == day.id }
             preferences[DAYS_KEY] = encodeDays(filtered)
         }
+        DayReminderScheduler.cancel(appContext, day.id)
         appContext.refreshWidgetsAsync()
     }
 
@@ -65,6 +71,7 @@ class DayRepository(context: Context) {
             }
             preferences[DAYS_KEY] = encodeDays(mergedDays)
         }
+        DayReminderScheduler.rescheduleAll(appContext)
         appContext.refreshWidgetsAsync()
     }
 
@@ -90,6 +97,10 @@ class DayRepository(context: Context) {
                             isLunar = obj.optBoolean("isLunar"),
                             isPinned = obj.optBoolean("isPinned"),
                             createdAt = obj.optLong("createdAt").takeIf { it > 0L } ?: obj.optLong("id"),
+                            reminderEnabled = obj.optBoolean("reminderEnabled"),
+                            reminderDaysBefore = obj.optInt("reminderDaysBefore", DEFAULT_REMINDER_DAYS_BEFORE).coerceAtLeast(0),
+                            reminderHour = obj.optInt("reminderHour", DEFAULT_REMINDER_HOUR).coerceIn(0, 23),
+                            reminderMinute = obj.optInt("reminderMinute", DEFAULT_REMINDER_MINUTE).coerceIn(0, 59),
                         )
                     )
                 }
@@ -115,6 +126,10 @@ class DayRepository(context: Context) {
                     put("isLunar", day.isLunar)
                     put("isPinned", day.isPinned)
                     put("createdAt", day.createdAt)
+                    put("reminderEnabled", day.reminderEnabled)
+                    put("reminderDaysBefore", day.reminderDaysBefore)
+                    put("reminderHour", day.reminderHour)
+                    put("reminderMinute", day.reminderMinute)
                 }
             )
         }

@@ -58,8 +58,10 @@ import top.yukonga.miuix.kmp.basic.ColorPalette
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -88,6 +90,19 @@ fun CheckInScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel: CheckInViewModel = viewModel()
     val cardModels by viewModel.cardModels.collectAsStateWithLifecycle()
+    var searchQuery by remember { mutableStateOf("") }
+    var searchExpanded by remember { mutableStateOf(false) }
+    val normalizedSearchQuery = remember(searchQuery) { searchQuery.trim() }
+    val filteredCards = remember(cardModels, normalizedSearchQuery) {
+        if (normalizedSearchQuery.isEmpty()) {
+            cardModels
+        } else {
+            cardModels.filter { card ->
+                card.item.name.contains(normalizedSearchQuery, ignoreCase = true) ||
+                    card.item.emoji.contains(normalizedSearchQuery)
+            }
+        }
+    }
     val showNotice = rememberNoticeAction()
     val emojiOptions = remember {
         listOf(
@@ -156,10 +171,21 @@ fun CheckInScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = "打卡",
-                scrollBehavior = scrollBehavior,
-            )
+            Column {
+                TopAppBar(
+                    title = "打卡",
+                    scrollBehavior = scrollBehavior,
+                )
+                CheckInSearchBar(
+                    searchQuery = searchQuery,
+                    searchExpanded = searchExpanded,
+                    onQueryChange = {
+                        searchQuery = it
+                        searchExpanded = it.isNotBlank()
+                    },
+                    onExpandedChange = { searchExpanded = it },
+                )
+            }
         },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -174,13 +200,17 @@ fun CheckInScreen(
                     .padding(horizontal = 12.dp),
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
-                if (cardModels.isEmpty()) {
+                if (filteredCards.isEmpty()) {
                     EmptyStateCard(
-                        title = "还没有打卡项",
-                        summary = "点击右下角按钮添加一个吧",
+                        title = if (normalizedSearchQuery.isEmpty()) "还没有打卡项" else "没有找到打卡项",
+                        summary = if (normalizedSearchQuery.isEmpty()) {
+                            "点击右下角按钮添加一个吧"
+                        } else {
+                            "没有匹配“$normalizedSearchQuery”的打卡项"
+                        },
                     )
                 } else {
-                    cardModels.forEach { card ->
+                    filteredCards.forEach { card ->
                         CheckInCard(
                             card = card,
                             onCheckIn = {
@@ -382,6 +412,38 @@ fun CheckInScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CheckInSearchBar(
+    searchQuery: String,
+    searchExpanded: Boolean,
+    onQueryChange: (String) -> Unit,
+    onExpandedChange: (Boolean) -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MiuixTheme.colorScheme.surface)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        SearchBar(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = DpSize(0.dp, 0.dp),
+            inputField = {
+                InputField(
+                    query = searchQuery,
+                    onQueryChange = onQueryChange,
+                    onSearch = { onExpandedChange(false) },
+                    expanded = searchExpanded,
+                    onExpandedChange = onExpandedChange,
+                    label = "搜索打卡项",
+                )
+            },
+            expanded = searchExpanded,
+            onExpandedChange = onExpandedChange,
+        ) {}
     }
 }
 

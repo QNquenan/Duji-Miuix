@@ -1,9 +1,13 @@
 package com.quenan.duji
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
@@ -34,12 +38,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.quenan.duji.data.ReleaseNoteEntry
 import com.quenan.duji.data.ReleaseNotesRepository
 import com.quenan.duji.data.AppUpdateManager
 import com.quenan.duji.data.settings.SettingsRepository
+import com.quenan.duji.data.reminder.DayReminderScheduler
 import com.quenan.duji.ui.component.LocalSystemNotice
 import com.quenan.duji.ui.component.SystemNoticeHost
+import com.quenan.duji.ui.component.UpdateAvailableDialog
 import com.quenan.duji.ui.component.fbutton.FloatingBottomBar
 import com.quenan.duji.ui.component.fbutton.FloatingBottomBarItem
 import com.quenan.duji.ui.component.rememberSystemNoticeHostState
@@ -54,6 +62,7 @@ import com.quenan.duji.widget.WidgetTargetType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -68,6 +77,7 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Years
 import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.time.LocalDate
 import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
@@ -79,10 +89,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val settingsRepository = SettingsRepository(applicationContext)
+        DayReminderScheduler.createNotificationChannel(applicationContext)
         setContent {
-            val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(
-                initialValue = com.quenan.duji.data.settings.SettingsData()
-            )
+            val settingsValue by settingsRepository.observeSettings()
+                .map<com.quenan.duji.data.settings.SettingsData, com.quenan.duji.data.settings.SettingsData?> { it }
+                .collectAsStateWithLifecycle(initialValue = null)
+            val settings = settingsValue ?: return@setContent
             val latestVersion = remember { ReleaseNotesRepository.latestVersionName(applicationContext) }
             val startPage = intent?.getIntExtra(WidgetIntentFactory.EXTRA_START_PAGE, 0) ?: 0
             val startTargetType = intent?.getStringExtra(WidgetIntentFactory.EXTRA_TARGET_TYPE)
@@ -92,6 +104,43 @@ class MainActivity : ComponentActivity() {
             val duJiPagerState = rememberDuJiPagerState(pagerState)
             val noticeHostState = rememberSystemNoticeHostState()
             val coroutineScope = rememberCoroutineScope()
+            var automaticLatestRelease by remember { mutableStateOf<ReleaseNoteEntry?>(null) }
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission(),
+            ) { }
+
+            LaunchedEffect(Unit) {
+                DayReminderScheduler.rescheduleAll(this@MainActivity)
+            }
+
+            LaunchedEffect(settings.notificationPermissionRequested) {
+                if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    !settings.notificationPermissionRequested &&
+                    ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    settingsRepository.markNotificationPermissionRequested()
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+
+            LaunchedEffect(settings.autoCheckUpdates, latestVersion) {
+                if (
+                    settings.autoCheckUpdates &&
+                    settingsRepository.consumeAutoUpdateCheckForToday(LocalDate.now().toString())
+                ) {
+                    val release = runCatching { ReleaseNotesRepository.fetchLatestReleaseNote() }.getOrNull()
+                    if (
+                        release != null &&
+                        ReleaseNotesRepository.isVersionNewer(release.title, latestVersion)
+                    ) {
+                        automaticLatestRelease = release
+                    }
+                }
+            }
 
             DuJiTheme(colorModeIndex = settings.colorModeIndex) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -199,6 +248,7 @@ class MainActivity : ComponentActivity() {
                                         versionName = latestVersion,
                                         selectedColorModeIndex = settings.colorModeIndex,
                                         predictiveBackEnabled = settings.predictiveBackEnabled,
+                                        autoCheckUpdates = settings.autoCheckUpdates,
                                         onSelectedColorModeChange = { newIndex ->
                                             coroutineScope.launch {
                                                 settingsRepository.updateColorMode(newIndex)
@@ -209,11 +259,34 @@ class MainActivity : ComponentActivity() {
                                                 settingsRepository.updatePredictiveBackEnabled(enabled)
                                             }
                                         },
+                                        onAutoCheckUpdatesChange = { enabled ->
+                                            coroutineScope.launch {
+                                                settingsRepository.updateAutoCheckUpdates(enabled)
+                                            }
+                                        },
                                     )
                                 }
                             }
                         }
                         SystemNoticeHost(hostState = noticeHostState)
+                        automaticLatestRelease?.let { release ->
+                            UpdateAvailableDialog(
+                                release = release,
+                                onDismiss = { automaticLatestRelease = null },
+                                onUpdate = { targetRelease ->
+                                    automaticLatestRelease = null
+                                    coroutineScope.launch {
+                                        runCatching {
+                                            AppUpdateManager.enqueue(this@MainActivity, targetRelease.title)
+                                        }.onSuccess {
+                                            noticeHostState.show(coroutineScope, "已开始下载更新")
+                                        }.onFailure {
+                                            noticeHostState.show(coroutineScope, "下载更新失败")
+                                        }
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }

@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
@@ -89,6 +90,8 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Alarm
+import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.All
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -97,6 +100,7 @@ import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.LocalDismissState
@@ -143,6 +147,10 @@ fun ThoseDaysScreen(
     val currentViewMode by viewModel.currentViewMode.collectAsStateWithLifecycle()
     val currentSort by viewModel.currentSort.collectAsStateWithLifecycle()
     val showNotice = rememberNoticeAction()
+    val context = LocalContext.current
+    val isNotificationPermissionGranted =
+        context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
     val emojiOptions = remember {
         listOf(
             EmojiOption("爱心", "❤️"), EmojiOption("双心", "💕"), EmojiOption("戒指", "💍"),
@@ -167,12 +175,18 @@ fun ThoseDaysScreen(
     var showCustomEmojiDialog by remember { mutableStateOf(false) }
     var showWeekDaysDialog by remember { mutableStateOf(false) }
     var showMonthDaysDialog by remember { mutableStateOf(false) }
+    var showReminderDaysDialog by remember { mutableStateOf(false) }
+    var showReminderTimeDialog by remember { mutableStateOf(false) }
     var dayName by remember { mutableStateOf("") }
     var dayType by remember { mutableStateOf(typeOptions[0]) }
     var repeatCycle by remember { mutableStateOf(repeatOptions[0]) }
     var selectedDate by remember { mutableStateOf("") }
     var dayNote by remember { mutableStateOf("") }
     var isPinned by remember { mutableStateOf(false) }
+    var reminderEnabled by remember { mutableStateOf(false) }
+    var reminderDaysBefore by remember { mutableIntStateOf(3) }
+    var reminderHour by remember { mutableIntStateOf(8) }
+    var reminderMinute by remember { mutableIntStateOf(0) }
     var selectedEmoji by remember { mutableStateOf<String?>(null) }
     var customEmojiText by remember { mutableStateOf("") }
     var selectedWeekDays by remember { mutableStateOf(setOf<Int>()) }
@@ -221,6 +235,10 @@ fun ThoseDaysScreen(
         selectedDate = ""
         dayNote = ""
         isPinned = false
+        reminderEnabled = false
+        reminderDaysBefore = 3
+        reminderHour = 8
+        reminderMinute = 0
         selectedEmoji = null
         customEmojiText = ""
         selectedWeekDays = emptySet()
@@ -243,6 +261,10 @@ fun ThoseDaysScreen(
         repeatCycle = day.repeatLabel()
         dayNote = day.note
         isPinned = day.isPinned
+        reminderEnabled = day.reminderEnabled
+        reminderDaysBefore = day.reminderDaysBefore
+        reminderHour = day.reminderHour
+        reminderMinute = day.reminderMinute
         selectedWeekDays = day.weekDays.toSet()
         selectedMonthDays = day.monthDays.toSet()
         isLunarMode = day.isLunar
@@ -590,21 +612,13 @@ fun ThoseDaysScreen(
                                     isLunar = isLunarMode,
                                     isPinned = isPinned,
                                     createdAt = editingDay?.createdAt ?: 0L,
+                                    reminderEnabled = reminderEnabled,
+                                    reminderDaysBefore = reminderDaysBefore,
+                                    reminderHour = reminderHour,
+                                    reminderMinute = reminderMinute,
                                 )
                                 if (editingDay == null) {
-                                    viewModel.addDay(
-                                        emoji = day.emoji,
-                                        emojiName = day.emojiName,
-                                        name = day.name,
-                                        type = day.type,
-                                        repeatCycle = day.repeatCycle,
-                                        targetDate = day.targetDate,
-                                        note = day.note,
-                                        weekDays = day.weekDays,
-                                        monthDays = day.monthDays,
-                                        isLunar = day.isLunar,
-                                        isPinned = day.isPinned,
-                                    )
+                                    viewModel.addDay(day)
                                     showNotice("添加成功")
                                 } else {
                                     viewModel.updateDay(day)
@@ -624,6 +638,8 @@ fun ThoseDaysScreen(
                     showCustomEmojiDialog = false
                     showWeekDaysDialog = false
                     showMonthDaysDialog = false
+                    showReminderDaysDialog = false
+                    showReminderTimeDialog = false
                     showBottomSheet = false
                     editingDay = null
                 },
@@ -724,6 +740,28 @@ fun ThoseDaysScreen(
                 showMonthDaysDialog = false
             })
 
+            ReminderDaysDialog(
+                show = showReminderDaysDialog,
+                daysBefore = reminderDaysBefore,
+                onDismiss = { showReminderDaysDialog = false },
+                onConfirm = {
+                    reminderDaysBefore = it
+                    showReminderDaysDialog = false
+                },
+            )
+
+            ReminderTimePickerDialog(
+                show = showReminderTimeDialog,
+                hour = reminderHour,
+                minute = reminderMinute,
+                onDismiss = { showReminderTimeDialog = false },
+                onConfirm = { hour, minute ->
+                    reminderHour = hour
+                    reminderMinute = minute
+                    showReminderTimeDialog = false
+                },
+            )
+
             DatePickerDialog(
                 show = showDateDialog,
                 isLunarMode = isLunarMode,
@@ -764,6 +802,119 @@ fun ThoseDaysScreen(
                     showDateDialog = false
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun ReminderDaysDialog(
+    show: Boolean,
+    daysBefore: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+) {
+    var inputDays by remember(show, daysBefore) { mutableStateOf(daysBefore.toString()) }
+    WindowDialog(
+        title = "提前提醒",
+        show = show,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TextField(
+                value = inputDays,
+                onValueChange = { inputDays = it.filter(Char::isDigit) },
+                label = "天数",
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 1,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                ),
+            )
+            Text(
+                text = "0 天表示当天提醒",
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(text = "取消", onClick = onDismiss, modifier = Modifier.weight(1f))
+                TextButton(
+                    text = "确定",
+                    onClick = { onConfirm(inputDays.toIntOrNull()?.coerceAtLeast(0) ?: daysBefore) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReminderTimePickerDialog(
+    show: Boolean,
+    hour: Int,
+    minute: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit,
+) {
+    var selectedHour by remember(show, hour) { mutableIntStateOf(hour) }
+    var selectedMinute by remember(show, minute) { mutableIntStateOf(minute) }
+    WindowDialog(
+        title = "提醒时间",
+        show = show,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "时", style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onBackgroundVariant)
+                    NumberPicker(
+                        value = selectedHour,
+                        onValueChange = { selectedHour = it },
+                        range = 0..23,
+                        wrapAround = true,
+                        modifier = Modifier.width(96.dp),
+                        label = { it.toString().padStart(2, '0') },
+                        colors = NumberPickerDefaults.colors(selectedTextColor = MiuixTheme.colorScheme.primary),
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "分", style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onBackgroundVariant)
+                    NumberPicker(
+                        value = selectedMinute,
+                        onValueChange = { selectedMinute = it },
+                        range = 0..59,
+                        wrapAround = true,
+                        modifier = Modifier.width(96.dp),
+                        label = { it.toString().padStart(2, '0') },
+                        colors = NumberPickerDefaults.colors(selectedTextColor = MiuixTheme.colorScheme.primary),
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(text = "取消", onClick = onDismiss, modifier = Modifier.weight(1f))
+                TextButton(
+                    text = "确定",
+                    onClick = { onConfirm(selectedHour, selectedMinute) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
         }
     }
 }
