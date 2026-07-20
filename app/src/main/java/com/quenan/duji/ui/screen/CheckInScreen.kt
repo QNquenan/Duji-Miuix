@@ -171,7 +171,7 @@ fun CheckInScreen(
                     .nestedScroll(fabScrollConnection)
                     .verticalScroll(rememberScrollState())
                     .padding(contentPadding)
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 12.dp),
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 if (cardModels.isEmpty()) {
@@ -489,10 +489,7 @@ private fun CheckInDetailContent(card: CheckInCardUiModel) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(itemColor.copy(alpha = 0.18f)),
+                modifier = Modifier.size(44.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(text = card.item.emoji, fontSize = 28.sp)
@@ -515,8 +512,11 @@ private fun CheckInDetailContent(card: CheckInCardUiModel) {
             badgeColors = badgeColors,
             allowCollapse = false,
             prefetchAdjacentMonths = false,
+            monthTitleFontSize = 32.sp,
+            monthTitleToWeekSpacing = 8.dp,
             onDateSelected = {},
         )
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 

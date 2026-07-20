@@ -44,6 +44,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quenan.duji.ui.util.solarToLunar
@@ -94,6 +96,8 @@ fun DuJiCalendar(
     badgeColors: Map<LocalDate, Color> = emptyMap(),
     allowCollapse: Boolean = true,
     prefetchAdjacentMonths: Boolean = true,
+    monthTitleFontSize: TextUnit = 40.sp,
+    monthTitleToWeekSpacing: Dp = 0.dp,
     onDateSelected: (LocalDate) -> Unit = {},
 ) {
     key(initialDate) {
@@ -169,6 +173,8 @@ fun DuJiCalendar(
         ) {
             CalendarHeader(
                 month = displayedMonth,
+                titleFontSize = monthTitleFontSize,
+                titleToWeekSpacing = monthTitleToWeekSpacing,
                 onMonthClick = { showMonthPicker = true },
             )
             HorizontalPager(
@@ -259,6 +265,8 @@ private fun cachedLunarDayName(date: LocalDate): String {
 @Composable
 private fun CalendarHeader(
     month: YearMonth,
+    titleFontSize: TextUnit,
+    titleToWeekSpacing: Dp,
     onMonthClick: () -> Unit,
 ) {
     Column {
@@ -270,10 +278,11 @@ private fun CalendarHeader(
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onMonthClick),
             color = MiuixTheme.colorScheme.onBackground,
-            fontSize = 40.sp,
+            fontSize = titleFontSize,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
         )
+        Spacer(modifier = Modifier.height(titleToWeekSpacing))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
