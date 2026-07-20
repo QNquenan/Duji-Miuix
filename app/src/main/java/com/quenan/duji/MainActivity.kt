@@ -7,6 +7,7 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -102,6 +104,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val settledPage = pagerState.settledPage
+                val contentReady = rememberMainContentReady()
                 LaunchedEffect(settledPage) { duJiPagerState.syncPage() }
                 val currentPage = pagerState.currentPage
                 LaunchedEffect(currentPage) { duJiPagerState.syncPage() }
@@ -168,36 +171,46 @@ class MainActivity : ComponentActivity() {
                                 androidx.compose.ui.Modifier
                             },
                             state = pagerState,
+                            beyondViewportPageCount = if (contentReady) bottomNavItems.lastIndex else 0,
                         ) { page ->
+                            val isCurrentPage = page == settledPage
                             when (page) {
-                                0 -> MyItemsScreen(
-                                    contentPadding = PaddingValues(bottom = bottomPadding),
-                                    openItemId = if (!widgetTargetConsumed && startTargetType == WidgetTargetType.ITEM.name && startTargetId >= 0) startTargetId else null,
-                                    onOpenItemConsumed = { widgetTargetConsumed = true },
-                                )
-                                1 -> ThoseDaysScreen(
-                                    contentPadding = PaddingValues(bottom = bottomPadding),
-                                    openDayId = if (!widgetTargetConsumed && startTargetType == WidgetTargetType.DAY.name && startTargetId >= 0) startTargetId else null,
-                                    onOpenDayConsumed = { widgetTargetConsumed = true },
-                                )
-                                2 -> CheckInScreen(
-                                    contentPadding = PaddingValues(bottom = bottomPadding),
-                                )
-                                3 -> SettingsScreen(
-                                    versionName = latestVersion,
-                                    selectedColorModeIndex = settings.colorModeIndex,
-                                    predictiveBackEnabled = settings.predictiveBackEnabled,
-                                    onSelectedColorModeChange = { newIndex ->
-                                        coroutineScope.launch {
-                                            settingsRepository.updateColorMode(newIndex)
-                                        }
-                                    },
-                                    onPredictiveBackEnabledChange = { enabled ->
-                                        coroutineScope.launch {
-                                            settingsRepository.updatePredictiveBackEnabled(enabled)
-                                        }
-                                    },
-                                )
+                                0 -> if (isCurrentPage || contentReady) {
+                                    MyItemsScreen(
+                                        contentPadding = PaddingValues(bottom = bottomPadding),
+                                        openItemId = if (!widgetTargetConsumed && startTargetType == WidgetTargetType.ITEM.name && startTargetId >= 0) startTargetId else null,
+                                        onOpenItemConsumed = { widgetTargetConsumed = true },
+                                    )
+                                }
+                                1 -> if (isCurrentPage || contentReady) {
+                                    ThoseDaysScreen(
+                                        contentPadding = PaddingValues(bottom = bottomPadding),
+                                        openDayId = if (!widgetTargetConsumed && startTargetType == WidgetTargetType.DAY.name && startTargetId >= 0) startTargetId else null,
+                                        onOpenDayConsumed = { widgetTargetConsumed = true },
+                                    )
+                                }
+                                2 -> if (isCurrentPage || contentReady) {
+                                    CheckInScreen(
+                                        contentPadding = PaddingValues(bottom = bottomPadding),
+                                    )
+                                }
+                                3 -> if (isCurrentPage || contentReady) {
+                                    SettingsScreen(
+                                        versionName = latestVersion,
+                                        selectedColorModeIndex = settings.colorModeIndex,
+                                        predictiveBackEnabled = settings.predictiveBackEnabled,
+                                        onSelectedColorModeChange = { newIndex ->
+                                            coroutineScope.launch {
+                                                settingsRepository.updateColorMode(newIndex)
+                                            }
+                                        },
+                                        onPredictiveBackEnabledChange = { enabled ->
+                                            coroutineScope.launch {
+                                                settingsRepository.updatePredictiveBackEnabled(enabled)
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                         SystemNoticeHost(hostState = noticeHostState)
@@ -207,6 +220,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+}
+
+@Composable
+private fun rememberMainContentReady(): Boolean {
+    var contentReady by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        contentReady = true
+    }
+
+    return contentReady
 }
 
 private data class BottomNavItem(
@@ -239,11 +264,17 @@ class DuJiPagerState(
 
         val distance = abs(targetIndex - pagerState.currentPage).coerceAtLeast(2)
         val duration = 100 * distance + 100
+        val layoutInfo = pagerState.layoutInfo
+        val pageSize = layoutInfo.pageSize + layoutInfo.pageSpacing
+        val currentDistanceInPages =
+            targetIndex - pagerState.currentPage - pagerState.currentPageOffsetFraction
+        val scrollPixels = currentDistanceInPages * pageSize
+
         navJob = coroutineScope.launch {
             val myJob = coroutineContext.job
             try {
-                pagerState.animateScrollToPage(
-                    page = targetIndex,
+                pagerState.animateScrollBy(
+                    value = scrollPixels,
                     animationSpec = tween(easing = EaseInOut, durationMillis = duration)
                 )
             } finally {

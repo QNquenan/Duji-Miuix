@@ -2,7 +2,7 @@
 
 ## Scope and outcome
 
-This audit followed Measure -> Diagnose -> Fix -> Verify. The workspace now has a physical API 36 device, so the report retains the release R8 and Macrobenchmark baseline from the initial audit. Runtime UI fixes were applied in this pass without rerunning Macrobenchmark, per the user's request; no new frame-time improvement claim is made.
+This audit followed Measure -> Diagnose -> Fix -> Verify. The workspace now has a physical API 36 device, so the report retains the release R8 and Macrobenchmark baseline from the initial audit. Runtime UI fixes were applied in this pass without rerunning Macrobenchmark, per the user's request; no new frame-time improvement claim is made. The main pager now follows the page-composition pattern from `tiann/KernelSU` while keeping DuJi's existing bottom-bar effects.
 
 ## Environment
 
@@ -68,7 +68,7 @@ The initial pass added measurement/release infrastructure, and this pass applied
 | --- | --- | --- | --- |
 | `configuring-r8-for-compose` | Enabled R8 full mode, resource shrinking, optimize ProGuard defaults, and debug fallback signing | `app/build.gradle.kts`, `app/proguard-rules.pro` | APK release build passed; APK is about 4.3 MB |
 | `generating-baseline-profiles` | Added generator/benchmark module, profileable manifest entry, startup + scroll journey, and generated profile | `settings.gradle.kts`, `build.gradle.kts`, `app`, `baselineprofile` | Startup `382.91 -> 331.85 ms`; scroll P90 `32.40 -> 18.85 ms` |
-| `page-transition` | Replaced custom `animateScrollBy` page-distance calculation with `PagerState.animateScrollToPage` so distant navigation does not animate through every intermediate page | `MainActivity.kt` | Not measured |
+| `KernelSU pager optimization` | Restored the `animateScrollBy` page transition and added sticky `contentReady` gating with `beyondViewportPageCount` so only the current page composes before the first frame and all four pages are prepared afterward | `MainActivity.kt` | Not measured |
 | `deferring-state-reads` | Changed both animated FAB offsets to the lambda `Modifier.offset` overload | `MyItemsScreen.kt`, `ThoseDaysScreen.kt` | Not measured |
 | `collecting-flows-safely` | Changed settings collection to `collectAsStateWithLifecycle` and collected predictive-back progress | `MainActivity.kt` | Not measured |
 | `background-data-preparation` | Moved item/day decode, sorting, card-model, statistics, and date-status transformations to `Dispatchers.Default` | `MyItemsViewModel.kt`, `ThoseDaysViewModel.kt` | Not measured |
@@ -76,7 +76,7 @@ The initial pass added measurement/release infrastructure, and this pass applied
 | `stabilizing-compose-types` | Not applied; compiler diagnosis retained for the next iteration | `DayModels.kt`, `UiModels.kt`, screen boundaries | Not measured |
 | Bottom navigation effects | Intentionally unchanged; blur/backdrop/lens/shader behavior remains as before | `FloatingBottomBar.kt`, liquid components | Not measured |
 
-`beyondBoundsPageCount` was not applied because the Compose Foundation API resolved by this project does not expose that `HorizontalPager` parameter. The dependency was not upgraded just for this optimization.
+The migrated parameter is `beyondViewportPageCount`, matching the current Compose Foundation API and the KernelSU implementation. KernelSU's Navigation3 `Navigator`, `NavDisplay`, and navigation-entry state decorators were not copied because DuJi uses a fixed four-page Pager rather than a route back stack.
 
 ## Verification (Phase 4)
 
@@ -96,6 +96,5 @@ The initial pass added measurement/release infrastructure, and this pass applied
 ## Recommended next run
 
 1. Add a navigation-specific Macrobenchmark when performance numbers are requested.
-2. Consider a Compose Foundation upgrade separately if adjacent-page precomposition is still required.
-3. Add `ReportDrawnWhen` or `ReportDrawnAfter` before using time-to-full-display as the startup KPI.
-4. Commit the generated profile and add a CI stability gate after the runtime baseline is accepted.
+2. Add `ReportDrawnWhen` or `ReportDrawnAfter` before using time-to-full-display as the startup KPI.
+3. Commit the generated profile and add a CI stability gate after the runtime baseline is accepted.
