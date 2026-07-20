@@ -70,6 +70,15 @@ class CalendarTest {
     }
 
     @Test
+    fun calendarGridDatesUsesCompleteMondayToSundayWeeks() {
+        val dates = calendarGridDates(YearMonth.of(2026, 8))
+
+        assertEquals(42, dates.size)
+        assertEquals(LocalDate.of(2026, 7, 27), dates.first())
+        assertEquals(LocalDate.of(2026, 9, 6), dates.last())
+    }
+
+    @Test
     fun calendarWeekCountIncludesSixthRowWhenNeeded() {
         assertEquals(4, calendarWeekCount(YearMonth.of(2027, 2)))
         assertEquals(6, calendarWeekCount(YearMonth.of(2026, 8)))

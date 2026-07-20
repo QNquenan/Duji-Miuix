@@ -7,6 +7,7 @@ import com.quenan.duji.data.checkin.CheckInItem
 import com.quenan.duji.data.checkin.CheckInRecord
 import com.quenan.duji.data.checkin.CheckInRepository
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -21,15 +22,11 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     val cardModels = combine(repository.observeItems(), records) { items, allRecords ->
-        val today = LocalDate.now().toString()
-        items.map { item ->
-            val itemRecords = allRecords.filter { it.itemId == item.id }
-            CheckInCardUiModel(
-                item = item,
-                records = itemRecords,
-                checkedToday = itemRecords.any { it.date == today },
-            )
-        }
+        buildCheckInCardModels(
+            items = items,
+            allRecords = allRecords,
+            today = LocalDate.now(),
+        )
     }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -71,5 +68,35 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
 
     suspend fun importData(items: List<CheckInItem>, records: List<CheckInRecord>) {
         repository.importData(items, records)
+    }
+}
+
+internal fun buildCheckInCardModels(
+    items: List<CheckInItem>,
+    allRecords: List<CheckInRecord>,
+    today: LocalDate,
+): List<CheckInCardUiModel> {
+    val recordsByItemId = allRecords.groupBy(CheckInRecord::itemId)
+    val currentMonth = YearMonth.from(today)
+    val todayText = today.toString()
+
+    return items.map { item ->
+        val itemRecords = recordsByItemId[item.id].orEmpty()
+        val recordDates = itemRecords.asSequence()
+            .mapNotNull { record -> runCatching { LocalDate.parse(record.date) }.getOrNull() }
+            .toSet()
+        val currentMonthCompletedDays = recordDates.asSequence()
+            .filter { date -> YearMonth.from(date) == currentMonth }
+            .map(LocalDate::getDayOfMonth)
+            .toSet()
+
+        CheckInCardUiModel(
+            item = item,
+            records = itemRecords,
+            recordDates = recordDates,
+            currentMonthDayCount = currentMonth.lengthOfMonth(),
+            currentMonthCompletedDays = currentMonthCompletedDays,
+            checkedToday = itemRecords.any { it.date == todayText },
+        )
     }
 }

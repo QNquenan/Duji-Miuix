@@ -6,6 +6,7 @@ import com.quenan.duji.data.checkin.CheckInRecord
 import com.quenan.duji.data.day.DayData
 import com.quenan.duji.data.day.DayStatus
 import com.quenan.duji.data.item.ItemData
+import java.time.LocalDate
 
 @Immutable
 data class ItemCardUiModel(
@@ -32,5 +33,8 @@ data class DayCardUiModel(
 data class CheckInCardUiModel(
     val item: CheckInItem,
     val records: List<CheckInRecord>,
+    val recordDates: Set<LocalDate>,
+    val currentMonthDayCount: Int,
+    val currentMonthCompletedDays: Set<Int>,
     val checkedToday: Boolean,
 )

@@ -50,11 +50,14 @@ import com.quenan.duji.ui.util.solarToLunar
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
+import java.util.LinkedHashMap
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
@@ -70,6 +73,16 @@ private const val CALENDAR_PAGE_COUNT = 10_001
 private const val CALENDAR_INITIAL_PAGE = CALENDAR_PAGE_COUNT / 2
 private const val CALENDAR_DEFAULT_WEEK_COUNT = 6
 private const val CALENDAR_BEYOND_VIEWPORT_PAGE_COUNT = 1
+private const val LUNAR_DAY_NAME_CACHE_SIZE = 504
+private val lunarDayNameCache = object : LinkedHashMap<LocalDate, String>(
+    LUNAR_DAY_NAME_CACHE_SIZE,
+    0.75f,
+    true,
+) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<LocalDate, String>?): Boolean {
+        return size > LUNAR_DAY_NAME_CACHE_SIZE
+    }
+}
 private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
@@ -80,6 +93,7 @@ fun DuJiCalendar(
     initialDate: LocalDate = LocalDate.now(),
     badgeColors: Map<LocalDate, Color> = emptyMap(),
     allowCollapse: Boolean = true,
+    prefetchAdjacentMonths: Boolean = true,
     onDateSelected: (LocalDate) -> Unit = {},
 ) {
     key(initialDate) {
@@ -159,7 +173,7 @@ fun DuJiCalendar(
             )
             HorizontalPager(
                 state = calendarPagerState,
-                beyondViewportPageCount = if (calendarContentReady) {
+                beyondViewportPageCount = if (prefetchAdjacentMonths && calendarContentReady) {
                     CALENDAR_BEYOND_VIEWPORT_PAGE_COUNT
                 } else {
                     0
@@ -216,6 +230,33 @@ private fun rememberCalendarContentReady(): Boolean {
 }
 
 @Composable
+private fun rememberCalendarLunarDayNames(
+    month: YearMonth,
+    dates: List<LocalDate>,
+): Map<LocalDate, String> {
+    var lunarDayNames by remember(month) { mutableStateOf<Map<LocalDate, String>>(emptyMap()) }
+
+    LaunchedEffect(month) {
+        lunarDayNames = withContext(Dispatchers.Default) {
+            dates.associateWith(::cachedLunarDayName)
+        }
+    }
+
+    return lunarDayNames
+}
+
+private fun cachedLunarDayName(date: LocalDate): String {
+    synchronized(lunarDayNameCache) {
+        lunarDayNameCache[date]?.let { return it }
+    }
+
+    val lunarDayName = solarToLunar(date.year, date.monthValue, date.dayOfMonth)?.dayName.orEmpty()
+    synchronized(lunarDayNameCache) {
+        return lunarDayNameCache.getOrPut(date) { lunarDayName }
+    }
+}
+
+@Composable
 private fun CalendarHeader(
     month: YearMonth,
     onMonthClick: () -> Unit,
@@ -261,8 +302,9 @@ private fun CalendarMonthContent(
     collapseProgress: Float,
     onDateClick: (LocalDate) -> Unit,
 ) {
-    val firstDay = month.atDay(1)
-    val gridStart = firstDay.minusDays((firstDay.dayOfWeek.value - 1).toLong())
+    val dates = remember(month) { calendarGridDates(month) }
+    val weekCount = remember(month) { calendarWeekCount(month) }
+    val lunarDayNames = rememberCalendarLunarDayNames(month, dates)
     val collapsedDate = if (YearMonth.from(today) == month) today else selectedDateInMonth(month, selectedDate)
     val collapsedWeekIndex = calendarWeekIndex(month, collapsedDate)
 
@@ -271,7 +313,6 @@ private fun CalendarMonthContent(
 
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val rowHeight = (maxWidth - 24.dp) / 7f
-            val weekCount = calendarWeekCount(month)
             val density = LocalDensity.current
             val rowHeightPx = with(density) { rowHeight.toPx() }
             val baseRowSpacingPx = with(density) { calendarRowSpacing.toPx() }
@@ -306,11 +347,12 @@ private fun CalendarMonthContent(
                     repeat(weekCount) { weekIndex ->
                         CalendarWeekRow(
                             month = month,
-                            gridStart = gridStart,
+                            dates = dates,
                             weekIndex = weekIndex,
                             today = today,
                             selectedDate = selectedDate,
                             badgeColors = badgeColors,
+                            lunarDayNames = lunarDayNames,
                             onDateClick = onDateClick,
                         )
                     }
@@ -347,11 +389,12 @@ private fun CalendarGridViewport(
 @Composable
 private fun CalendarWeekRow(
     month: YearMonth,
-    gridStart: LocalDate,
+    dates: List<LocalDate>,
     weekIndex: Int,
     today: LocalDate,
     selectedDate: LocalDate,
     badgeColors: Map<LocalDate, Color>,
+    lunarDayNames: Map<LocalDate, String>,
     onDateClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -360,9 +403,10 @@ private fun CalendarWeekRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         repeat(7) { dayIndex ->
-            val date = gridStart.plusDays((weekIndex * 7 + dayIndex).toLong())
+            val date = dates[weekIndex * 7 + dayIndex]
             CheckInDayCell(
                 date = date,
+                lunarDayName = lunarDayNames[date].orEmpty(),
                 isCurrentMonth = YearMonth.from(date) == month,
                 isToday = date == today,
                 isSelected = date == selectedDate,
@@ -380,6 +424,7 @@ private fun CalendarWeekRow(
 @Composable
 private fun CheckInDayCell(
     date: LocalDate,
+    lunarDayName: String,
     isCurrentMonth: Boolean,
     isToday: Boolean,
     isSelected: Boolean,
@@ -388,7 +433,6 @@ private fun CheckInDayCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val lunar = remember(date) { solarToLunar(date.year, date.monthValue, date.dayOfMonth) }
     val primaryColor = MiuixTheme.colorScheme.onBackground
     val mutedColor = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.28f)
     val dayColor = when {
@@ -423,7 +467,7 @@ private fun CheckInDayCell(
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = lunar?.dayName.orEmpty(),
+                text = lunarDayName,
                 color = lunarColor,
                 fontSize = 11.sp,
                 maxLines = 1,
@@ -471,6 +515,14 @@ private fun calendarMonthForPage(page: Int, baseMonth: YearMonth): YearMonth {
 private fun calendarPageForMonth(month: YearMonth, baseMonth: YearMonth): Int {
     val monthOffset = ChronoUnit.MONTHS.between(baseMonth, month).toInt()
     return (CALENDAR_INITIAL_PAGE + monthOffset).coerceIn(0, CALENDAR_PAGE_COUNT - 1)
+}
+
+internal fun calendarGridDates(month: YearMonth): List<LocalDate> {
+    val firstDay = month.atDay(1)
+    val gridStart = firstDay.minusDays((firstDay.dayOfWeek.value - 1).toLong())
+    return List(calendarWeekCount(month) * 7) { index ->
+        gridStart.plusDays(index.toLong())
+    }
 }
 
 internal fun calendarWeekCount(month: YearMonth): Int {

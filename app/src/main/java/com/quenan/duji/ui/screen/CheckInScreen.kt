@@ -50,8 +50,6 @@ import com.quenan.duji.data.checkin.CheckInItem
 import com.quenan.duji.ui.component.DuJiCalendar
 import com.quenan.duji.ui.component.EmptyStateCard
 import com.quenan.duji.ui.component.rememberNoticeAction
-import java.time.LocalDate
-import java.time.YearMonth
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -394,12 +392,7 @@ private fun CheckInCard(
     onClick: () -> Unit,
 ) {
     val itemColor = remember(card.item.colorArgb) { Color(card.item.colorArgb) }
-    val currentMonth = YearMonth.now()
-    val completedDays = card.records.asSequence()
-        .mapNotNull { record -> runCatching { LocalDate.parse(record.date) }.getOrNull() }
-        .filter { date -> date.year == currentMonth.year && date.month == currentMonth.month }
-        .map { date -> date.dayOfMonth }
-        .toSet()
+    val completedDays = card.currentMonthCompletedDays
     val monthlyCount = completedDays.size
     val inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.35f)
     val buttonColor = if (card.checkedToday) itemColor.copy(alpha = 0.2f) else itemColor
@@ -443,7 +436,7 @@ private fun CheckInCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    repeat(currentMonth.lengthOfMonth()) { index ->
+                    repeat(card.currentMonthDayCount) { index ->
                         val day = index + 1
                         Box(
                             modifier = Modifier
@@ -479,14 +472,9 @@ private fun CheckInCard(
 @Composable
 private fun CheckInDetailContent(card: CheckInCardUiModel) {
     val itemColor = remember(card.item.colorArgb) { Color(card.item.colorArgb) }
-    val currentMonth = YearMonth.now()
-    val monthlyCount = card.records.count { record ->
-        runCatching { YearMonth.from(LocalDate.parse(record.date)) }.getOrNull() == currentMonth
-    }
-    val badgeColors = remember(card.records, itemColor) {
-        card.records.mapNotNull { record ->
-            runCatching { LocalDate.parse(record.date) }.getOrNull()
-        }.associateWith { itemColor }
+    val monthlyCount = card.currentMonthCompletedDays.size
+    val badgeColors = remember(card.recordDates, itemColor) {
+        card.recordDates.associateWith { itemColor }
     }
 
     Column(
@@ -526,6 +514,7 @@ private fun CheckInDetailContent(card: CheckInCardUiModel) {
         DuJiCalendar(
             badgeColors = badgeColors,
             allowCollapse = false,
+            prefetchAdjacentMonths = false,
             onDateSelected = {},
         )
     }
