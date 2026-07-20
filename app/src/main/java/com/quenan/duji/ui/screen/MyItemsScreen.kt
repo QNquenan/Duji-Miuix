@@ -113,7 +113,7 @@ fun MyItemsScreen(
     var fabVisible by remember { mutableStateOf(true) }
     var scrollDistance by remember { mutableFloatStateOf(0f) }
     val fabBottomOffset by animateDpAsState(
-        targetValue = if (fabVisible) 0.dp else 120.dp,
+        targetValue = if (fabVisible) 0.dp else 240.dp,
         animationSpec = tween(durationMillis = 300),
         label = "my-items-fab-offset",
     )

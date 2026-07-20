@@ -1,11 +1,11 @@
-package com.quenan.duji.ui.screen
+package com.quenan.duji.ui.component
 
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CheckInScreenTest {
+class CalendarTest {
     @Test
     fun moveToNextMonthKeepsSelectedDay() {
         val result = moveToMonth(
