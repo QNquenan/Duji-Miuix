@@ -57,14 +57,11 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Forward
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
@@ -82,6 +79,7 @@ fun DuJiCalendar(
     modifier: Modifier = Modifier,
     initialDate: LocalDate = LocalDate.now(),
     badgeColors: Map<LocalDate, Color> = emptyMap(),
+    allowCollapse: Boolean = true,
     onDateSelected: (LocalDate) -> Unit = {},
 ) {
     key(initialDate) {
@@ -116,52 +114,48 @@ fun DuJiCalendar(
             }
         }
 
-        fun changeMonth(monthDelta: Int) {
-            coroutineScope.launch {
-                val targetPage = (calendarPagerState.currentPage + monthDelta)
-                    .coerceIn(0, CALENDAR_PAGE_COUNT - 1)
-                calendarPagerState.animateScrollToPage(targetPage)
-            }
-        }
-
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .pointerInput(Unit) {
-                    var totalDrag = 0f
-                    detectVerticalDragGestures(
-                        onDragStart = {
-                            totalDrag = 0f
-                            collapseAnimationJob?.cancel()
-                        },
-                        onVerticalDrag = { _, dragAmount ->
-                            collapseAnimationJob?.cancel()
-                            totalDrag += dragAmount
-                            collapseProgress = (collapseProgress - dragAmount / collapseDistancePx)
-                                .coerceIn(0f, 1f)
-                        },
-                        onDragEnd = {
-                            if (abs(totalDrag) >= 48.dp.toPx()) {
-                                val target = if (collapseProgress >= 0.5f) 1f else 0f
-                                collapseAnimationJob = coroutineScope.launch {
-                                    val animation = Animatable(collapseProgress)
-                                    animation.animateTo(target, animationSpec = tween(260)) {
-                                        collapseProgress = value
+                .then(
+                    if (allowCollapse) {
+                        Modifier.pointerInput(Unit) {
+                            var totalDrag = 0f
+                            detectVerticalDragGestures(
+                                onDragStart = {
+                                    totalDrag = 0f
+                                    collapseAnimationJob?.cancel()
+                                },
+                                onVerticalDrag = { _, dragAmount ->
+                                    collapseAnimationJob?.cancel()
+                                    totalDrag += dragAmount
+                                    collapseProgress = (collapseProgress - dragAmount / collapseDistancePx)
+                                        .coerceIn(0f, 1f)
+                                },
+                                onDragEnd = {
+                                    if (abs(totalDrag) >= 48.dp.toPx()) {
+                                        val target = if (collapseProgress >= 0.5f) 1f else 0f
+                                        collapseAnimationJob = coroutineScope.launch {
+                                            val animation = Animatable(collapseProgress)
+                                            animation.animateTo(target, animationSpec = tween(260)) {
+                                                collapseProgress = value
+                                            }
+                                        }
                                     }
-                                }
-                            }
-                        },
-                        onDragCancel = {
-                            collapseAnimationJob?.cancel()
-                        },
-                    )
-                },
+                                },
+                                onDragCancel = {
+                                    collapseAnimationJob?.cancel()
+                                },
+                            )
+                        }
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
             CalendarHeader(
                 month = displayedMonth,
                 onMonthClick = { showMonthPicker = true },
-                onPreviousMonth = { changeMonth(-1) },
-                onNextMonth = { changeMonth(1) },
             )
             HorizontalPager(
                 state = calendarPagerState,
@@ -177,22 +171,24 @@ fun DuJiCalendar(
                     today = today,
                     selectedDate = selectedDate,
                     badgeColors = badgeColors,
-                    collapseProgress = collapseProgress,
+                    collapseProgress = if (allowCollapse) collapseProgress else 0f,
                     onDateClick = {
                         selectedDate = it
                         onDateSelected(it)
                     },
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .width(36.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.42f)),
-            )
+            if (allowCollapse) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .width(36.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.42f)),
+                )
+            }
         }
 
         MonthPickerDialog(
@@ -223,33 +219,20 @@ private fun rememberCalendarContentReady(): Boolean {
 private fun CalendarHeader(
     month: YearMonth,
     onMonthClick: () -> Unit,
-    onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit,
 ) {
     Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onPreviousMonth) {
-                Icon(imageVector = MiuixIcons.Back, contentDescription = "上个月")
-            }
-            Text(
-                text = "${month.year}年${month.monthValue}月",
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 12.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable(onClick = onMonthClick),
-                color = MiuixTheme.colorScheme.onBackground,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-            )
-            IconButton(onClick = onNextMonth) {
-                Icon(imageVector = MiuixIcons.Forward, contentDescription = "下个月")
-            }
-        }
+        Text(
+            text = "${month.year}年${month.monthValue}月",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onMonthClick),
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),

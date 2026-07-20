@@ -525,6 +525,7 @@ private fun CheckInDetailContent(card: CheckInCardUiModel) {
         }
         DuJiCalendar(
             badgeColors = badgeColors,
+            allowCollapse = false,
             onDateSelected = {},
         )
     }
