@@ -87,7 +87,7 @@ private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
 private val exerciseCompletedColor = Color(0xFF5EBD7D)
-private val exerciseBlockSize = 6.dp
+private val exerciseBlockSize = 5.dp
 
 @Composable
 fun CheckInScreen(
@@ -278,46 +278,51 @@ private fun ExerciseCard() {
                         color = MiuixTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "${EXERCISE_MONTH_COUNT}/月",
+                        text = "${EXERCISE_MONTH_COUNT}次/月 • ${EXERCISE_TOTAL_COUNT}次",
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onBackgroundVariant,
                     )
                 }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Box(
                     modifier = Modifier
+                        .width(64.dp)
+                        .height(40.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(totalCountBackground)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .background(totalCountBackground),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "${EXERCISE_TOTAL_COUNT}次",
-                        fontSize = 13.sp,
+                        text = "打卡",
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = exerciseCompletedColor,
                     )
                 }
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 44.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                repeat(EXERCISE_DAY_COUNT) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(exerciseBlockSize)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(
-                                if (index in 13..17) {
-                                    exerciseCompletedColor
-                                } else {
-                                    inactiveColor
-                                },
-                            ),
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    repeat(EXERCISE_DAY_COUNT) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(exerciseBlockSize)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(
+                                    if (index in 13..17) {
+                                        exerciseCompletedColor
+                                    } else {
+                                        inactiveColor
+                                    },
+                                ),
+                        )
+                    }
                 }
             }
         }
