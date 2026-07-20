@@ -1,15 +1,15 @@
 package com.quenan.duji.ui.screen
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,15 +21,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +49,10 @@ import androidx.compose.ui.unit.sp
 import com.quenan.duji.ui.util.solarToLunar
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import kotlin.math.abs
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -60,6 +69,8 @@ import top.yukonga.miuix.kmp.icon.extended.Forward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
+private const val CALENDAR_PAGE_COUNT = 10_001
+private const val CALENDAR_INITIAL_PAGE = CALENDAR_PAGE_COUNT / 2
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
 
@@ -69,21 +80,40 @@ fun CheckInScreen(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val today = remember { LocalDate.now() }
+    val baseMonth = remember { YearMonth.from(today) }
     val scrollBehavior = MiuixScrollBehavior()
-    var displayedMonth by remember { mutableStateOf(YearMonth.from(today)) }
+    val coroutineScope = rememberCoroutineScope()
+    val calendarPagerState = rememberPagerState(
+        initialPage = CALENDAR_INITIAL_PAGE,
+        pageCount = { CALENDAR_PAGE_COUNT },
+    )
+    val displayedMonth by remember(calendarPagerState, baseMonth) {
+        derivedStateOf { calendarMonthForPage(calendarPagerState.currentPage, baseMonth) }
+    }
     var selectedDate by remember { mutableStateOf(today) }
-    var monthTransitionDirection by remember { mutableIntStateOf(1) }
     var showMonthPicker by remember { mutableStateOf(false) }
+    var isCalendarCollapsed by remember { mutableStateOf(false) }
 
-    fun changeToMonth(newMonth: YearMonth) {
-        monthTransitionDirection = if (newMonth.isBefore(displayedMonth)) -1 else 1
-        displayedMonth = newMonth
-        selectedDate = selectedDateInMonth(newMonth, selectedDate)
+    LaunchedEffect(calendarPagerState, baseMonth) {
+        snapshotFlow { calendarPagerState.settledPage }
+            .collect { page ->
+                selectedDate = selectedDateInMonth(calendarMonthForPage(page, baseMonth), selectedDate)
+            }
     }
 
-    fun changeMonth(monthDelta: Long) {
-        val (newMonth, _) = moveToMonth(displayedMonth, selectedDate, monthDelta)
-        changeToMonth(newMonth)
+    fun changeToMonth(newMonth: YearMonth) {
+        selectedDate = selectedDateInMonth(newMonth, selectedDate)
+        coroutineScope.launch {
+            calendarPagerState.animateScrollToPage(calendarPageForMonth(newMonth, baseMonth))
+        }
+    }
+
+    fun changeMonth(monthDelta: Int) {
+        coroutineScope.launch {
+            val targetPage = (calendarPagerState.currentPage + monthDelta)
+                .coerceIn(0, CALENDAR_PAGE_COUNT - 1)
+            calendarPagerState.animateScrollToPage(targetPage)
+        }
     }
 
     Scaffold(
@@ -115,88 +145,33 @@ fun CheckInScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .pointerInput(displayedMonth, selectedDate) {
+                    .pointerInput(isCalendarCollapsed) {
                         var totalDrag = 0f
-                        detectHorizontalDragGestures(
-                            onHorizontalDrag = { _, dragAmount ->
+                        detectVerticalDragGestures(
+                            onVerticalDrag = { _, dragAmount ->
                                 totalDrag += dragAmount
                             },
                             onDragEnd = {
                                 if (abs(totalDrag) >= 48.dp.toPx()) {
-                                    changeMonth(if (totalDrag < 0f) 1 else -1)
+                                    isCalendarCollapsed = totalDrag < 0f
                                 }
                             },
                             onDragCancel = {},
                         )
                     },
             ) {
-                AnimatedContent(
-                    targetState = displayedMonth,
-                    transitionSpec = {
-                        val direction = monthTransitionDirection
-                        (slideInHorizontally(tween(260)) { width -> width * direction } + fadeIn(tween(180))) togetherWith
-                            (slideOutHorizontally(tween(260)) { width -> -width * direction } + fadeOut(tween(180)))
-                    },
-                    label = "日历月份切换",
-                ) { month ->
-                    Column {
-                        Text(
-                            text = "${month.year}年${month.monthValue}月",
-                            modifier = Modifier
-                                .padding(top = 12.dp, bottom = 18.dp)
-                                .clickable { showMonthPicker = true },
-                            color = MiuixTheme.colorScheme.onBackground,
-                            fontSize = 40.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            weekLabels.forEachIndexed { index, label ->
-                                Text(
-                                    text = label,
-                                    modifier = Modifier.weight(1f),
-                                    color = if (index >= 5) weekendColor else MiuixTheme.colorScheme.onBackground,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        val firstDay = month.atDay(1)
-                        val gridStart = firstDay.minusDays((firstDay.dayOfWeek.value - 1).toLong())
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            repeat(5) { weekIndex ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    repeat(7) { dayIndex ->
-                                        val date = gridStart.plusDays((weekIndex * 7 + dayIndex).toLong())
-                                        CheckInDayCell(
-                                            date = date,
-                                            isCurrentMonth = YearMonth.from(date) == month,
-                                            isToday = date == today,
-                                            isSelected = date == selectedDate,
-                                            isWeekend = dayIndex >= 5,
-                                            onClick = { selectedDate = date },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .aspectRatio(1f),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                HorizontalPager(
+                    state = calendarPagerState,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { page ->
+                    CalendarMonthContent(
+                        month = calendarMonthForPage(page, baseMonth),
+                        today = today,
+                        selectedDate = selectedDate,
+                        isCollapsed = isCalendarCollapsed,
+                        onMonthClick = { showMonthPicker = true },
+                        onDateClick = { selectedDate = it },
+                    )
                 }
             }
         }
@@ -211,6 +186,122 @@ fun CheckInScreen(
             showMonthPicker = false
         },
     )
+}
+
+@Composable
+private fun CalendarMonthContent(
+    month: YearMonth,
+    today: LocalDate,
+    selectedDate: LocalDate,
+    isCollapsed: Boolean,
+    onMonthClick: () -> Unit,
+    onDateClick: (LocalDate) -> Unit,
+) {
+    val firstDay = month.atDay(1)
+    val gridStart = firstDay.minusDays((firstDay.dayOfWeek.value - 1).toLong())
+    val collapsedDate = if (YearMonth.from(today) == month) today else selectedDate
+    val collapsedWeekIndex = calendarWeekIndex(month, collapsedDate)
+
+    Column {
+        Text(
+            text = "${month.year}年${month.monthValue}月",
+            modifier = Modifier
+                .padding(top = 12.dp, bottom = 18.dp)
+                .clickable(onClick = onMonthClick),
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            weekLabels.forEachIndexed { index, label ->
+                Text(
+                    text = label,
+                    modifier = Modifier.weight(1f),
+                    color = if (index >= 5) weekendColor else MiuixTheme.colorScheme.onBackground,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        AnimatedContent(
+            targetState = isCollapsed,
+            transitionSpec = {
+                if (targetState) {
+                    (slideInVertically(tween(260)) { it / 2 } + fadeIn(tween(180))) togetherWith
+                        (slideOutVertically(tween(260)) { -it / 2 } + fadeOut(tween(180)))
+                } else {
+                    (slideInVertically(tween(260)) { -it / 2 } + fadeIn(tween(180))) togetherWith
+                        (slideOutVertically(tween(260)) { it / 2 } + fadeOut(tween(180)))
+                }
+            },
+            label = "日历折叠",
+        ) { collapsed ->
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (collapsed) {
+                    CalendarWeekRow(
+                        month = month,
+                        gridStart = gridStart,
+                        weekIndex = collapsedWeekIndex,
+                        today = today,
+                        selectedDate = selectedDate,
+                        onDateClick = onDateClick,
+                    )
+                } else {
+                    repeat(5) { weekIndex ->
+                        CalendarWeekRow(
+                            month = month,
+                            gridStart = gridStart,
+                            weekIndex = weekIndex,
+                            today = today,
+                            selectedDate = selectedDate,
+                            onDateClick = onDateClick,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarWeekRow(
+    month: YearMonth,
+    gridStart: LocalDate,
+    weekIndex: Int,
+    today: LocalDate,
+    selectedDate: LocalDate,
+    onDateClick: (LocalDate) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        repeat(7) { dayIndex ->
+            val date = gridStart.plusDays((weekIndex * 7 + dayIndex).toLong())
+            CheckInDayCell(
+                date = date,
+                isCurrentMonth = YearMonth.from(date) == month,
+                isToday = date == today,
+                isSelected = date == selectedDate,
+                isWeekend = dayIndex >= 5,
+                onClick = { onDateClick(date) },
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(1f),
+            )
+        }
+    }
 }
 
 @Composable
@@ -270,12 +361,26 @@ internal fun moveToMonth(
     monthDelta: Long,
 ): Pair<YearMonth, LocalDate> {
     val newMonth = displayedMonth.plusMonths(monthDelta)
-    val day = selectedDate.dayOfMonth.coerceAtMost(newMonth.lengthOfMonth())
-    return newMonth to newMonth.atDay(day)
+    return newMonth to selectedDateInMonth(newMonth, selectedDate)
 }
 
 internal fun selectedDateInMonth(month: YearMonth, selectedDate: LocalDate): LocalDate {
     return month.atDay(selectedDate.dayOfMonth.coerceAtMost(month.lengthOfMonth()))
+}
+
+private fun calendarMonthForPage(page: Int, baseMonth: YearMonth): YearMonth {
+    return baseMonth.plusMonths((page - CALENDAR_INITIAL_PAGE).toLong())
+}
+
+private fun calendarPageForMonth(month: YearMonth, baseMonth: YearMonth): Int {
+    val monthOffset = ChronoUnit.MONTHS.between(baseMonth, month).toInt()
+    return (CALENDAR_INITIAL_PAGE + monthOffset).coerceIn(0, CALENDAR_PAGE_COUNT - 1)
+}
+
+private fun calendarWeekIndex(month: YearMonth, date: LocalDate): Int {
+    val leadingDays = month.atDay(1).dayOfWeek.value - 1
+    val dayOfMonth = if (YearMonth.from(date) == month) date.dayOfMonth else 1
+    return (leadingDays + dayOfMonth - 1) / 7
 }
 
 @Composable
