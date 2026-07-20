@@ -87,7 +87,7 @@ private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
 private val exerciseCompletedColor = Color(0xFF5EBD7D)
-private val exerciseBlockSize = 5.dp
+private val exerciseBlockSize = 4.dp
 
 @Composable
 fun CheckInScreen(
@@ -245,67 +245,41 @@ fun CheckInScreen(
 @Composable
 private fun ExerciseCard() {
     val inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.35f)
-    val totalCountBackground = exerciseCompletedColor.copy(alpha = 0.18f)
+    val checkInButtonBackground = exerciseCompletedColor.copy(alpha = 0.18f)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
     ) {
-        Column(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            Box(
+                modifier = Modifier.size(32.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    modifier = Modifier.size(32.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = "🏋️", fontSize = 26.sp)
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Text(
-                        text = "运动",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MiuixTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = "${EXERCISE_MONTH_COUNT}次/月 • ${EXERCISE_TOTAL_COUNT}次",
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    )
-                }
+                Text(text = "🏋️", fontSize = 26.sp)
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .width(64.dp)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(totalCountBackground),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "打卡",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = exerciseCompletedColor,
-                    )
-                }
+                Text(
+                    text = "运动",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = "${EXERCISE_MONTH_COUNT}次/月 • ${EXERCISE_TOTAL_COUNT}次",
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                )
                 Row(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -324,6 +298,21 @@ private fun ExerciseCard() {
                         )
                     }
                 }
+            }
+            Box(
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(72.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(checkInButtonBackground),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "打卡",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = exerciseCompletedColor,
+                )
             }
         }
     }
