@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -58,6 +59,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -77,9 +80,12 @@ private const val CALENDAR_PAGE_COUNT = 10_001
 private const val CALENDAR_INITIAL_PAGE = CALENDAR_PAGE_COUNT / 2
 private const val CALENDAR_DEFAULT_WEEK_COUNT = 6
 private const val CALENDAR_BEYOND_VIEWPORT_PAGE_COUNT = 1
+private const val EXERCISE_DAY_COUNT = 31
 private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
+private val exerciseCompletedColor = Color(0xFF5EBD7D)
+private val exerciseBlockSize = 6.dp
 
 @Composable
 fun CheckInScreen(
@@ -216,6 +222,10 @@ fun CheckInScreen(
                         .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.42f)),
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            ExerciseCard()
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
@@ -228,6 +238,49 @@ fun CheckInScreen(
             showMonthPicker = false
         },
     )
+}
+
+@Composable
+private fun ExerciseCard() {
+    val inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.35f)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = "运动",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MiuixTheme.colorScheme.onBackground,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                repeat(EXERCISE_DAY_COUNT) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(exerciseBlockSize)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                if (index in 13..17) {
+                                    exerciseCompletedColor
+                                } else {
+                                    inactiveColor
+                                },
+                            ),
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
