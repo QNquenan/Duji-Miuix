@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableFloatStateOf
@@ -34,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +75,8 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 
 private const val CALENDAR_PAGE_COUNT = 10_001
 private const val CALENDAR_INITIAL_PAGE = CALENDAR_PAGE_COUNT / 2
+private const val CALENDAR_DEFAULT_WEEK_COUNT = 6
+private const val CALENDAR_BEYOND_VIEWPORT_PAGE_COUNT = 1
 private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
@@ -92,10 +94,9 @@ fun CheckInScreen(
         initialPage = CALENDAR_INITIAL_PAGE,
         pageCount = { CALENDAR_PAGE_COUNT },
     )
-    val displayedMonth by remember(calendarPagerState, baseMonth) {
-        derivedStateOf { calendarMonthForPage(calendarPagerState.currentPage, baseMonth) }
-    }
+    val calendarContentReady = rememberCalendarContentReady()
     var selectedDate by remember { mutableStateOf(today) }
+    var displayedMonth by remember { mutableStateOf(baseMonth) }
     var showMonthPicker by remember { mutableStateOf(false) }
     var collapseProgress by remember { mutableFloatStateOf(0f) }
     val collapseAnimationJob = remember { mutableStateOf<Job?>(null) }
@@ -104,7 +105,9 @@ fun CheckInScreen(
     LaunchedEffect(calendarPagerState, baseMonth) {
         snapshotFlow { calendarPagerState.settledPage }
             .collect { page ->
-                selectedDate = selectedDateInMonth(calendarMonthForPage(page, baseMonth), selectedDate)
+                val settledMonth = calendarMonthForPage(page, baseMonth)
+                displayedMonth = settledMonth
+                selectedDate = selectedDateInMonth(settledMonth, selectedDate)
             }
     }
 
@@ -182,8 +185,17 @@ fun CheckInScreen(
                         )
                     },
             ) {
+                CalendarHeader(
+                    month = displayedMonth,
+                    onMonthClick = { showMonthPicker = true },
+                )
                 HorizontalPager(
                     state = calendarPagerState,
+                    beyondViewportPageCount = if (calendarContentReady) {
+                        CALENDAR_BEYOND_VIEWPORT_PAGE_COUNT
+                    } else {
+                        0
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 ) { page ->
                     CalendarMonthContent(
@@ -191,7 +203,6 @@ fun CheckInScreen(
                         today = today,
                         selectedDate = selectedDate,
                         collapseProgress = collapseProgress,
-                        onMonthClick = { showMonthPicker = true },
                         onDateClick = { selectedDate = it },
                     )
                 }
@@ -220,22 +231,25 @@ fun CheckInScreen(
 }
 
 @Composable
-private fun CalendarMonthContent(
-    month: YearMonth,
-    today: LocalDate,
-    selectedDate: LocalDate,
-    collapseProgress: Float,
-    onMonthClick: () -> Unit,
-    onDateClick: (LocalDate) -> Unit,
-) {
-    val firstDay = month.atDay(1)
-    val gridStart = firstDay.minusDays((firstDay.dayOfWeek.value - 1).toLong())
-    val collapsedDate = if (YearMonth.from(today) == month) today else selectedDateInMonth(month, selectedDate)
-    val collapsedWeekIndex = calendarWeekIndex(month, collapsedDate)
+private fun rememberCalendarContentReady(): Boolean {
+    var contentReady by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        contentReady = true
+    }
+
+    return contentReady
+}
+
+@Composable
+private fun CalendarHeader(
+    month: YearMonth,
+    onMonthClick: () -> Unit,
+) {
     Column {
         Text(
-            text = "${month.year}年${month.monthValue}月",
+            text = "${month.year}\u5e74${month.monthValue}\u6708",
             modifier = Modifier
                 .padding(top = 12.dp, bottom = 18.dp)
                 .clip(RoundedCornerShape(12.dp))
@@ -260,7 +274,23 @@ private fun CalendarMonthContent(
                 )
             }
         }
+    }
+}
 
+@Composable
+private fun CalendarMonthContent(
+    month: YearMonth,
+    today: LocalDate,
+    selectedDate: LocalDate,
+    collapseProgress: Float,
+    onDateClick: (LocalDate) -> Unit,
+) {
+    val firstDay = month.atDay(1)
+    val gridStart = firstDay.minusDays((firstDay.dayOfWeek.value - 1).toLong())
+    val collapsedDate = if (YearMonth.from(today) == month) today else selectedDateInMonth(month, selectedDate)
+    val collapsedWeekIndex = calendarWeekIndex(month, collapsedDate)
+
+    Column {
         Spacer(modifier = Modifier.height(12.dp))
 
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
@@ -268,7 +298,12 @@ private fun CalendarMonthContent(
             val weekCount = calendarWeekCount(month)
             val density = LocalDensity.current
             val rowHeightPx = with(density) { rowHeight.toPx() }
-            val rowSpacingPx = with(density) { calendarRowSpacing.toPx() }
+            val baseRowSpacingPx = with(density) { calendarRowSpacing.toPx() }
+            val rowSpacingPx = calendarRowSpacingPx(
+                rowHeightPx = rowHeightPx,
+                baseRowSpacingPx = baseRowSpacingPx,
+                weekCount = weekCount,
+            )
             val expandedHeightPx = calendarGridHeightPx(
                 rowHeightPx = rowHeightPx,
                 rowSpacingPx = rowSpacingPx,
@@ -276,7 +311,7 @@ private fun CalendarMonthContent(
             )
             val clipWindow = calendarClipWindow(
                 rowHeightPx = rowHeightPx,
-                rowSpacingPx = rowSpacingPx,
+                rowSpacingPx = baseRowSpacingPx,
                 weekCount = weekCount,
                 currentWeekIndex = collapsedWeekIndex,
                 collapseProgress = collapseProgress,
@@ -290,7 +325,7 @@ private fun CalendarMonthContent(
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(calendarRowSpacing),
+                    verticalArrangement = Arrangement.spacedBy(with(density) { rowSpacingPx.toDp() }),
                 ) {
                     repeat(weekCount) { weekIndex ->
                         CalendarWeekRow(
@@ -456,6 +491,25 @@ internal fun calendarGridHeightPx(
     return rowHeightPx * safeWeekCount + rowSpacingPx * (safeWeekCount - 1)
 }
 
+internal fun calendarRowSpacingPx(
+    rowHeightPx: Float,
+    baseRowSpacingPx: Float,
+    weekCount: Int,
+): Float {
+    val safeWeekCount = weekCount.coerceAtLeast(1)
+    if (safeWeekCount >= CALENDAR_DEFAULT_WEEK_COUNT || safeWeekCount == 1) {
+        return baseRowSpacingPx
+    }
+
+    val reservedHeightPx = calendarGridHeightPx(
+        rowHeightPx = rowHeightPx,
+        rowSpacingPx = baseRowSpacingPx,
+        weekCount = CALENDAR_DEFAULT_WEEK_COUNT,
+    )
+    return ((reservedHeightPx - rowHeightPx * safeWeekCount) / (safeWeekCount - 1))
+        .coerceAtLeast(baseRowSpacingPx)
+}
+
 internal data class CalendarClipWindow(
     val topPx: Float,
     val heightPx: Float,
@@ -471,8 +525,17 @@ internal fun calendarClipWindow(
     val safeWeekCount = weekCount.coerceAtLeast(1)
     val safeCurrentWeekIndex = currentWeekIndex.coerceIn(0, safeWeekCount - 1)
     val progress = collapseProgress.coerceIn(0f, 1f)
-    val expandedHeightPx = calendarGridHeightPx(rowHeightPx, rowSpacingPx, safeWeekCount)
-    val currentRowTopPx = (rowHeightPx + rowSpacingPx) * safeCurrentWeekIndex
+    val effectiveRowSpacingPx = calendarRowSpacingPx(
+        rowHeightPx = rowHeightPx,
+        baseRowSpacingPx = rowSpacingPx,
+        weekCount = safeWeekCount,
+    )
+    val expandedHeightPx = calendarGridHeightPx(
+        rowHeightPx = rowHeightPx,
+        rowSpacingPx = effectiveRowSpacingPx,
+        weekCount = safeWeekCount,
+    )
+    val currentRowTopPx = (rowHeightPx + effectiveRowSpacingPx) * safeCurrentWeekIndex
 
     return CalendarClipWindow(
         topPx = currentRowTopPx * progress,

@@ -77,6 +77,29 @@ class CheckInScreenTest {
     }
 
     @Test
+    fun shorterMonthsUseExtraSpacingToReserveSixRows() {
+        val rowHeightPx = 46f
+        val baseRowSpacingPx = 8f
+        val reservedHeightPx = calendarGridHeightPx(rowHeightPx, baseRowSpacingPx, 6)
+        val fiveRowSpacingPx = calendarRowSpacingPx(rowHeightPx, baseRowSpacingPx, 5)
+        val fourRowSpacingPx = calendarRowSpacingPx(rowHeightPx, baseRowSpacingPx, 4)
+
+        assertEquals(21.5f, fiveRowSpacingPx, 0.001f)
+        assertEquals(44f, fourRowSpacingPx, 0.001f)
+        assertEquals(baseRowSpacingPx, calendarRowSpacingPx(rowHeightPx, baseRowSpacingPx, 6), 0.001f)
+        assertEquals(
+            reservedHeightPx,
+            calendarGridHeightPx(rowHeightPx, fiveRowSpacingPx, 5),
+            0.001f,
+        )
+        assertEquals(
+            reservedHeightPx,
+            calendarGridHeightPx(rowHeightPx, fourRowSpacingPx, 4),
+            0.001f,
+        )
+    }
+
+    @Test
     fun calendarWeekIndexUsesCurrentDateRow() {
         assertEquals(
             3,
@@ -98,7 +121,7 @@ class CheckInScreenTest {
         )
 
         assertEquals(0f, window.topPx, 0.001f)
-        assertEquals(262f, window.heightPx, 0.001f)
+        assertEquals(316f, window.heightPx, 0.001f)
     }
 
     @Test
@@ -111,7 +134,7 @@ class CheckInScreenTest {
             collapseProgress = 1f,
         )
 
-        assertEquals(162f, window.topPx, 0.001f)
+        assertEquals(202.5f, window.topPx, 0.001f)
         assertEquals(46f, window.heightPx, 0.001f)
     }
 
@@ -125,7 +148,7 @@ class CheckInScreenTest {
             collapseProgress = 0.5f,
         )
 
-        assertEquals(81f, window.topPx, 0.001f)
-        assertEquals(154f, window.heightPx, 0.001f)
+        assertEquals(101.25f, window.topPx, 0.001f)
+        assertEquals(181f, window.heightPx, 0.001f)
     }
 }

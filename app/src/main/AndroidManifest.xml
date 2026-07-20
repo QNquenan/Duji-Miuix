@@ -16,6 +16,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DuJi">
 
+        <profileable android:shell="true" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
