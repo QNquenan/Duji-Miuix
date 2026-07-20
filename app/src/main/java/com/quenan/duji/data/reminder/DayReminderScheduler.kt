@@ -13,6 +13,7 @@ import android.content.pm.PackageManager
 import com.quenan.duji.MainActivity
 import com.quenan.duji.data.day.DayData
 import com.quenan.duji.data.day.DayRepository
+import com.quenan.duji.data.day.nextReminderTriggerDate
 import com.quenan.duji.data.day.reminderDaysUntil
 import com.quenan.duji.data.day.reminderNotificationText
 import com.quenan.duji.widget.WidgetIntentFactory
@@ -21,7 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.util.Calendar
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
 
 object DayReminderScheduler {
     const val ACTION_DAY_REMINDER = "com.quenan.duji.action.DAY_REMINDER"
@@ -47,13 +51,13 @@ object DayReminderScheduler {
         cancel(context, day.id)
         if (!day.reminderEnabled) return
 
-        val alarmManager = context.getSystemService(AlarmManager::class.java)
-        alarmManager.setInexactRepeating(
-            AlarmManager.RTC_WAKEUP,
-            nextTriggerAtMillis(day.reminderHour, day.reminderMinute),
-            AlarmManager.INTERVAL_DAY,
-            reminderPendingIntent(context, day.id),
-        )
+        val triggerAtMillis = nextTriggerAtMillis(day) ?: return
+        context.getSystemService(AlarmManager::class.java)
+            .setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                reminderPendingIntent(context, day.id),
+            )
     }
 
     fun cancel(context: Context, dayId: Long) {
@@ -109,15 +113,20 @@ object DayReminderScheduler {
         )
     }
 
-    private fun nextTriggerAtMillis(hour: Int, minute: Int): Long {
-        val now = Calendar.getInstance()
-        return Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
-            set(Calendar.MINUTE, minute.coerceIn(0, 59))
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            if (!time.after(now.time)) add(Calendar.DAY_OF_YEAR, 1)
-        }.timeInMillis
+    private fun nextTriggerAtMillis(day: DayData): Long? {
+        val now = LocalDateTime.now()
+        val reminderTime = LocalTime.of(
+            day.reminderHour.coerceIn(0, 23),
+            day.reminderMinute.coerceIn(0, 59),
+        )
+        var triggerDate = day.nextReminderTriggerDate(now.toLocalDate()) ?: return null
+        if (triggerDate == now.toLocalDate() && !reminderTime.isAfter(now.toLocalTime())) {
+            triggerDate = day.nextReminderTriggerDate(now.toLocalDate().plusDays(1)) ?: return null
+        }
+        return LocalDateTime.of(triggerDate, reminderTime)
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
     }
 
     private fun notificationRequestCode(dayId: Long): Int = (dayId xor (dayId ushr 32)).toInt()
@@ -135,6 +144,7 @@ class DayReminderAlarmReceiver : BroadcastReceiver() {
                     .firstOrNull { it.id == dayId }
                 if (day != null) {
                     DayReminderScheduler.showReminderIfDue(context.applicationContext, day)
+                    DayReminderScheduler.schedule(context.applicationContext, day)
                 }
             } finally {
                 pendingResult.finish()

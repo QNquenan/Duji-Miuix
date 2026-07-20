@@ -220,6 +220,78 @@ fun DayData.reminderDaysUntil(today: LocalDate = LocalDate.now()): Int? {
     }
 }
 
+fun DayData.nextReminderTriggerDate(onOrAfter: LocalDate = LocalDate.now()): LocalDate? {
+    var searchFrom = onOrAfter
+    repeat(3_660) {
+        val eventDate = nextReminderEventDate(searchFrom) ?: return null
+        val triggerDate = eventDate.minusDays(reminderDaysBefore.toLong())
+        if (!triggerDate.isBefore(onOrAfter)) return triggerDate
+        searchFrom = eventDate.plusDays(1)
+    }
+    return null
+}
+
+fun DayData.nextReminderEventDate(onOrAfter: LocalDate = LocalDate.now()): LocalDate? {
+    val date = parseDayDate(targetDate) ?: return null
+    return when (type) {
+        DayType.BIRTHDAY,
+        DayType.ANNIVERSARY -> nextAnnualOccurrenceDate(date, onOrAfter, isLunar)
+        DayType.DAYS -> when (repeatCycle) {
+            RepeatCycle.NONE -> date.takeIf { !it.isBefore(onOrAfter) }
+            RepeatCycle.WEEKLY -> nextWeeklyReminderDate(onOrAfter)
+            RepeatCycle.MONTHLY -> nextMonthlyReminderDate(onOrAfter)
+            RepeatCycle.YEARLY -> nextAnnualOccurrenceDate(date, onOrAfter, isLunar)
+        }
+    }
+}
+
+private fun DayData.nextWeeklyReminderDate(onOrAfter: LocalDate): LocalDate? {
+    if (weekDays.isEmpty()) return null
+    val todayWeek = (onOrAfter.dayOfWeek.value + 6) % 7
+    val offset = (0..6).firstOrNull { dayOffset ->
+        weekDays.contains((todayWeek + dayOffset) % 7)
+    } ?: return null
+    return onOrAfter.plusDays(offset.toLong())
+}
+
+private fun DayData.nextMonthlyReminderDate(onOrAfter: LocalDate): LocalDate? {
+    if (monthDays.isEmpty()) return null
+    val sortedDays = monthDays.sorted()
+    sortedDays.forEach { day ->
+        val eventDate = LocalDate.of(
+            onOrAfter.year,
+            onOrAfter.monthValue,
+            day.coerceAtMost(onOrAfter.lengthOfMonth()),
+        )
+        if (!eventDate.isBefore(onOrAfter)) return eventDate
+    }
+    val nextMonth = onOrAfter.plusMonths(1)
+    return LocalDate.of(
+        nextMonth.year,
+        nextMonth.monthValue,
+        sortedDays.first().coerceAtMost(nextMonth.lengthOfMonth()),
+    )
+}
+
+private fun nextAnnualOccurrenceDate(
+    date: LocalDate,
+    onOrAfter: LocalDate,
+    isLunar: Boolean,
+): LocalDate? {
+    if (isLunar) {
+        val lunar = solarToLunar(date.year, date.monthValue, date.dayOfMonth) ?: return null
+        val thisYear = safeLunarToSolar(onOrAfter.year, lunar.month, lunar.day)
+        return if (thisYear != null && !thisYear.isBefore(onOrAfter)) {
+            thisYear
+        } else {
+            safeLunarToSolar(onOrAfter.year + 1, lunar.month, lunar.day)
+        }
+    }
+
+    val thisYearDate = dateInYear(date, onOrAfter.year)
+    return if (!thisYearDate.isBefore(onOrAfter)) thisYearDate else dateInYear(date, onOrAfter.year + 1)
+}
+
 fun DayData.reminderNotificationText(daysBefore: Int = reminderDaysBefore): String = when (type) {
     DayType.BIRTHDAY -> "$name \u8fd8\u6709 $daysBefore \u5929\u751f\u65e5\uff01"
     DayType.ANNIVERSARY -> "\u8ddd\u79bb $name \u8fd8\u6709 $daysBefore \u5929\uff0c\u7eaa\u5ff5\u65e5\u5feb\u5230\u4e86\uff01"

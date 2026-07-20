@@ -33,6 +33,30 @@ class DayReminderTest {
     }
 
     @Test
+    fun nextTriggerDateMatchesTheConfiguredAdvanceDays() {
+        val day = day(type = DayType.BIRTHDAY, targetDate = "2000-07-23")
+            .copy(reminderDaysBefore = 2)
+
+        assertEquals(LocalDate.of(2026, 7, 21), day.nextReminderTriggerDate(LocalDate.of(2026, 7, 20)))
+    }
+
+    @Test
+    fun missedRecurringReminderMovesToTheNextOccurrence() {
+        val day = day(type = DayType.BIRTHDAY, targetDate = "2000-07-23")
+            .copy(reminderDaysBefore = 2)
+
+        assertEquals(LocalDate.of(2027, 7, 21), day.nextReminderTriggerDate(LocalDate.of(2026, 7, 22)))
+    }
+
+    @Test
+    fun missedOneOffReminderDoesNotScheduleAgain() {
+        val day = day(type = DayType.DAYS, targetDate = "2026-07-21").copy(reminderDaysBefore = 0)
+
+        assertEquals(LocalDate.of(2026, 7, 21), day.nextReminderTriggerDate(LocalDate.of(2026, 7, 21)))
+        assertNull(day.nextReminderTriggerDate(LocalDate.of(2026, 7, 22)))
+    }
+
+    @Test
     fun recurringWeeklyReminderFindsTheNextConfiguredWeekday() {
         val day = day(
             type = DayType.DAYS,

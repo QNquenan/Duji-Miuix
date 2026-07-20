@@ -27,3 +27,5 @@ commit message 必须使用统一前缀加中文摘要，例如 `fix:`、`feat:`
 ## 规则 5：每次都要提交项目
 
 每次提交需要commit message 保持 `feat:`、`fix:` 等前缀格式
+
+## 规则 6: 不用运行测试
