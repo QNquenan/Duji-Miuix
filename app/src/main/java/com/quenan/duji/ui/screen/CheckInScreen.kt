@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -54,6 +55,8 @@ import kotlin.math.abs
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -142,35 +145,54 @@ fun CheckInScreen(
                 .padding(contentPadding)
                 .padding(horizontal = 20.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pointerInput(isCalendarCollapsed) {
-                        var totalDrag = 0f
-                        detectVerticalDragGestures(
-                            onVerticalDrag = { _, dragAmount ->
-                                totalDrag += dragAmount
-                            },
-                            onDragEnd = {
-                                if (abs(totalDrag) >= 48.dp.toPx()) {
-                                    isCalendarCollapsed = totalDrag < 0f
-                                }
-                            },
-                            onDragCancel = {},
-                        )
-                    },
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(0.dp),
+                colors = CardDefaults.defaultColors(
+                    color = MiuixTheme.colorScheme.surfaceContainer,
+                ),
             ) {
-                HorizontalPager(
-                    state = calendarPagerState,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { page ->
-                    CalendarMonthContent(
-                        month = calendarMonthForPage(page, baseMonth),
-                        today = today,
-                        selectedDate = selectedDate,
-                        isCollapsed = isCalendarCollapsed,
-                        onMonthClick = { showMonthPicker = true },
-                        onDateClick = { selectedDate = it },
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(top = 4.dp, bottom = 10.dp)
+                        .pointerInput(isCalendarCollapsed) {
+                            var totalDrag = 0f
+                            detectVerticalDragGestures(
+                                onVerticalDrag = { _, dragAmount ->
+                                    totalDrag += dragAmount
+                                },
+                                onDragEnd = {
+                                    if (abs(totalDrag) >= 48.dp.toPx()) {
+                                        isCalendarCollapsed = totalDrag < 0f
+                                    }
+                                },
+                                onDragCancel = {},
+                            )
+                        },
+                ) {
+                    HorizontalPager(
+                        state = calendarPagerState,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { page ->
+                        CalendarMonthContent(
+                            month = calendarMonthForPage(page, baseMonth),
+                            today = today,
+                            selectedDate = selectedDate,
+                            isCollapsed = isCalendarCollapsed,
+                            onMonthClick = { showMonthPicker = true },
+                            onDateClick = { selectedDate = it },
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .width(36.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.42f)),
                     )
                 }
             }
@@ -207,6 +229,7 @@ private fun CalendarMonthContent(
             text = "${month.year}年${month.monthValue}月",
             modifier = Modifier
                 .padding(top = 12.dp, bottom = 18.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onMonthClick),
             color = MiuixTheme.colorScheme.onBackground,
             fontSize = 40.sp,
