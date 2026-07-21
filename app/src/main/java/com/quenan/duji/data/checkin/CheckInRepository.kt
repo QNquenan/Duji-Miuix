@@ -46,6 +46,21 @@ class CheckInRepository(context: Context) {
         return added
     }
 
+    suspend fun cancelCheckIn(itemId: Long, date: String): Boolean {
+        var removed = false
+        dataStore.edit { preferences ->
+            val records = decodeRecords(preferences[RECORDS_KEY].orEmpty())
+            val remainingRecords = records.filterNot { record ->
+                record.itemId == itemId && record.date == date
+            }
+            if (remainingRecords.size != records.size) {
+                preferences[RECORDS_KEY] = encodeRecords(remainingRecords)
+                removed = true
+            }
+        }
+        return removed
+    }
+
     suspend fun updateItem(item: CheckInItem) {
         dataStore.edit { preferences ->
             val updatedItems = decodeItems(preferences[ITEMS_KEY].orEmpty()).map { current ->

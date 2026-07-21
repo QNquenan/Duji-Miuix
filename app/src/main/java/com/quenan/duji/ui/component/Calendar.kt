@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -60,12 +61,15 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
+import top.yukonga.miuix.kmp.window.WindowListPopup
 
 private const val CALENDAR_PAGE_COUNT = 10_001
 private const val CALENDAR_INITIAL_PAGE = CALENDAR_PAGE_COUNT / 2
@@ -85,6 +89,11 @@ private val calendarRowSpacing = 8.dp
 private val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
 private val weekendColor = Color(0xFF4D8DFF)
 
+data class CalendarDateLongPressAction(
+    val text: String,
+    val onClick: () -> Unit,
+)
+
 @Composable
 fun DuJiCalendar(
     modifier: Modifier = Modifier,
@@ -95,6 +104,7 @@ fun DuJiCalendar(
     monthTitleFontSize: TextUnit = 40.sp,
     monthTitleToWeekSpacing: Dp = 0.dp,
     onDateSelected: (LocalDate) -> Unit = {},
+    dateLongPressAction: (LocalDate) -> CalendarDateLongPressAction? = { null },
 ) {
     key(initialDate) {
         val today = initialDate
@@ -188,6 +198,7 @@ fun DuJiCalendar(
                     selectedDate = selectedDate,
                     badgeColors = badgeColors,
                     collapseProgress = if (allowCollapse) collapseProgress else 0f,
+                    dateLongPressAction = dateLongPressAction,
                     onDateClick = {
                         selectedDate = it
                         onDateSelected(it)
@@ -305,6 +316,7 @@ private fun CalendarMonthContent(
     selectedDate: LocalDate,
     badgeColors: Map<LocalDate, Color>,
     collapseProgress: Float,
+    dateLongPressAction: (LocalDate) -> CalendarDateLongPressAction?,
     onDateClick: (LocalDate) -> Unit,
 ) {
     val dates = remember(month) { calendarGridDates(month) }
@@ -355,10 +367,10 @@ private fun CalendarMonthContent(
                             dates = dates,
                             weekIndex = weekIndex,
                             today = today,
-                            selectedDate = selectedDate,
                             badgeColors = badgeColors,
                             lunarDayNames = lunarDayNames,
                             onDateClick = onDateClick,
+                            dateLongPressAction = dateLongPressAction,
                         )
                     }
                 }
@@ -397,10 +409,10 @@ private fun CalendarWeekRow(
     dates: List<LocalDate>,
     weekIndex: Int,
     today: LocalDate,
-    selectedDate: LocalDate,
     badgeColors: Map<LocalDate, Color>,
     lunarDayNames: Map<LocalDate, String>,
     onDateClick: (LocalDate) -> Unit,
+    dateLongPressAction: (LocalDate) -> CalendarDateLongPressAction?,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -414,10 +426,10 @@ private fun CalendarWeekRow(
                 lunarDayName = lunarDayNames[date].orEmpty(),
                 isCurrentMonth = YearMonth.from(date) == month,
                 isToday = date == today,
-                isSelected = date == selectedDate,
                 isWeekend = dayIndex >= 5,
                 badgeColor = badgeColors[date],
                 onClick = { onDateClick(date) },
+                longPressAction = dateLongPressAction(date),
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f),
@@ -432,27 +444,24 @@ private fun CheckInDayCell(
     lunarDayName: String,
     isCurrentMonth: Boolean,
     isToday: Boolean,
-    isSelected: Boolean,
     isWeekend: Boolean,
     badgeColor: Color?,
     onClick: () -> Unit,
+    longPressAction: CalendarDateLongPressAction?,
     modifier: Modifier = Modifier,
 ) {
     val primaryColor = MiuixTheme.colorScheme.onBackground
     val mutedColor = MiuixTheme.colorScheme.onBackground.copy(alpha = 0.28f)
     val shape = RoundedCornerShape(12.dp)
-    val isActiveSelection = isSelected && !isToday
-    val backgroundColor = badgeColor?.copy(alpha = 0.16f)
-        ?: if (isActiveSelection) MiuixTheme.colorScheme.primary else Color.Transparent
+    var showDateActionMenu by remember(date) { mutableStateOf(false) }
+    val backgroundColor = badgeColor?.copy(alpha = 0.16f) ?: Color.Transparent
     val todayBorderColor = badgeColor ?: MiuixTheme.colorScheme.primary
     val dayColor = when {
-        isActiveSelection -> MiuixTheme.colorScheme.onPrimary
         !isCurrentMonth -> mutedColor
         isWeekend -> weekendColor
         else -> primaryColor
     }
     val lunarColor = when {
-        isActiveSelection -> MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
         !isCurrentMonth -> mutedColor
         else -> MiuixTheme.colorScheme.onBackgroundVariant
     }
@@ -462,7 +471,12 @@ private fun CheckInDayCell(
             .clip(shape)
             .background(backgroundColor)
             .then(if (isToday) Modifier.border(1.dp, todayBorderColor, shape) else Modifier)
-            .clickable(onClick = onClick)
+            .pointerInput(onClick, longPressAction) {
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onLongPress = if (longPressAction == null) null else { _ -> showDateActionMenu = true },
+                )
+            }
             .padding(vertical = 2.dp),
     ) {
         Column(
@@ -474,7 +488,7 @@ private fun CheckInDayCell(
                 text = date.dayOfMonth.toString(),
                 color = dayColor,
                 fontSize = 20.sp,
-                fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
                 textAlign = TextAlign.Center,
             )
             Text(
@@ -484,6 +498,27 @@ private fun CheckInDayCell(
                 maxLines = 1,
                 textAlign = TextAlign.Center,
             )
+        }
+
+        longPressAction?.let { action ->
+            WindowListPopup(
+                show = showDateActionMenu,
+                enableWindowDim = false,
+                onDismissRequest = { showDateActionMenu = false },
+            ) {
+                ListPopupColumn {
+                    DropdownImpl(
+                        text = action.text,
+                        optionSize = 1,
+                        isSelected = false,
+                        index = 0,
+                        onSelectedIndexChange = {
+                            showDateActionMenu = false
+                            action.onClick()
+                        },
+                    )
+                }
+            }
         }
     }
 }

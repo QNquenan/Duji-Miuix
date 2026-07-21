@@ -45,8 +45,18 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun checkIn(itemId: Long, onResult: (Boolean) -> Unit) {
+        checkIn(itemId, LocalDate.now(), onResult)
+    }
+
+    fun checkIn(itemId: Long, date: LocalDate, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            onResult(repository.checkIn(itemId, LocalDate.now().toString()))
+            onResult(repository.checkIn(itemId, date.toString()))
+        }
+    }
+
+    fun cancelCheckIn(itemId: Long, date: LocalDate, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            onResult(repository.cancelCheckIn(itemId, date.toString()))
         }
     }
 

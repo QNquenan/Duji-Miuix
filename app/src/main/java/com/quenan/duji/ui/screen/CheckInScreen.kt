@@ -47,9 +47,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.quenan.duji.data.checkin.CheckInItem
+import com.quenan.duji.ui.component.CalendarDateLongPressAction
 import com.quenan.duji.ui.component.DuJiCalendar
 import com.quenan.duji.ui.component.EmptyStateCard
 import com.quenan.duji.ui.component.rememberNoticeAction
+import java.time.LocalDate
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -376,7 +378,19 @@ fun CheckInScreen(
             onDismissRequest = { showDetailBottomSheet = false },
             onDismissFinished = { selectedCard = null },
         ) {
-            CheckInDetailContent(detailCard)
+            CheckInDetailContent(
+                card = detailCard,
+                onCheckIn = { date ->
+                    viewModel.checkIn(detailCard.item.id, date) { isSuccess ->
+                        showNotice(if (isSuccess) "打卡成功" else "请勿重复打卡")
+                    }
+                },
+                onCancelCheckIn = { date ->
+                    viewModel.cancelCheckIn(detailCard.item.id, date) { isSuccess ->
+                        showNotice(if (isSuccess) "已取消打卡" else "未找到打卡记录")
+                    }
+                },
+            )
         }
     }
 
@@ -532,7 +546,11 @@ private fun CheckInCard(
 }
 
 @Composable
-private fun CheckInDetailContent(card: CheckInCardUiModel) {
+private fun CheckInDetailContent(
+    card: CheckInCardUiModel,
+    onCheckIn: (LocalDate) -> Unit,
+    onCancelCheckIn: (LocalDate) -> Unit,
+) {
     val itemColor = remember(card.item.colorArgb) { Color(card.item.colorArgb) }
     val monthlyCount = card.currentMonthCompletedDays.size
     val badgeColors = remember(card.recordDates, itemColor) {
@@ -577,6 +595,19 @@ private fun CheckInDetailContent(card: CheckInCardUiModel) {
             monthTitleFontSize = 32.sp,
             monthTitleToWeekSpacing = 8.dp,
             onDateSelected = {},
+            dateLongPressAction = { date ->
+                if (date in card.recordDates) {
+                    CalendarDateLongPressAction(
+                        text = "取消打卡",
+                        onClick = { onCancelCheckIn(date) },
+                    )
+                } else {
+                    CalendarDateLongPressAction(
+                        text = if (date == LocalDate.now()) "打卡" else "补签",
+                        onClick = { onCheckIn(date) },
+                    )
+                }
+            },
         )
         Spacer(modifier = Modifier.height(24.dp))
     }
