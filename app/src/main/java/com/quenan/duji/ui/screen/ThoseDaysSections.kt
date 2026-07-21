@@ -244,11 +244,13 @@ internal fun ThoseDaysDetailContent(detailDay: DayData) {
                         label = "提醒时间",
                         value = "%02d:%02d".format(detailDay.reminderHour, detailDay.reminderMinute),
                     )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
-                    ThoseDaysDetailRow(
-                        label = "通知权限",
-                        value = if (isNotificationPermissionGranted) "已授予" else "未授予",
-                    )
+                    if (!isNotificationPermissionGranted) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+                        ThoseDaysDetailRow(
+                            label = "通知权限",
+                            value = "未授予",
+                        )
+                    }
                 }
             }
         }
