@@ -1,5 +1,7 @@
 package com.quenan.duji.ui.screen
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -164,6 +168,11 @@ internal fun ThoseDaysContent(
 @Composable
 internal fun ThoseDaysDetailContent(detailDay: DayData) {
     val status = detailDay.computeStatus()
+    val context = LocalContext.current
+    val isNotificationPermissionGranted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.POST_NOTIFICATIONS,
+    ) == PackageManager.PERMISSION_GRANTED
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -198,6 +207,49 @@ internal fun ThoseDaysDetailContent(detailDay: DayData) {
                 ThoseDaysDetailRow(label = "数字", value = status.statusText)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
                 ThoseDaysDetailRow(label = "日期", value = detailDay.targetDateFormatted())
+            }
+        }
+        SmallTitle(
+            text = "提醒",
+            insideMargin = PaddingValues(top = 16.dp, bottom = 2.dp, start = 16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(16.dp),
+            colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                ThoseDaysDetailRow(
+                    label = "日子提醒",
+                    value = if (detailDay.reminderEnabled) "已开启" else "未开启",
+                )
+                if (detailDay.reminderEnabled) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+                    ThoseDaysDetailRow(
+                        label = "提前提醒",
+                        value = if (detailDay.reminderDaysBefore > 0) {
+                            "提前 ${detailDay.reminderDaysBefore} 天"
+                        } else {
+                            "未开启"
+                        },
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+                    ThoseDaysDetailRow(
+                        label = "当天提醒",
+                        value = if (detailDay.remindOnDay) "已开启" else "未开启",
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+                    ThoseDaysDetailRow(
+                        label = "提醒时间",
+                        value = "%02d:%02d".format(detailDay.reminderHour, detailDay.reminderMinute),
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+                    ThoseDaysDetailRow(
+                        label = "通知权限",
+                        value = if (isNotificationPermissionGranted) "已授予" else "未授予",
+                    )
+                }
             }
         }
         if (detailDay.note.isNotBlank()) {

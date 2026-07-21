@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -23,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quenan.duji.data.ReleaseNoteEntry
 import com.quenan.duji.data.ReleaseNotesRepository
+import com.quenan.duji.data.settings.SettingsData
+import com.quenan.duji.data.settings.SettingsRepository
 import com.quenan.duji.ui.theme.DuJiTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -43,7 +47,10 @@ class ReleaseNotesActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            DuJiTheme {
+            val settingsRepository = remember { SettingsRepository(applicationContext) }
+            val settings by settingsRepository.observeSettings()
+                .collectAsStateWithLifecycle(initialValue = SettingsData())
+            DuJiTheme(colorModeIndex = settings.colorModeIndex) {
                 val scrollBehavior = MiuixScrollBehavior()
                 val releaseNotes = remember { ReleaseNotesRepository.load(applicationContext) }
 

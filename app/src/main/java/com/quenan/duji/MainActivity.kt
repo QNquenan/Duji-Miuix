@@ -83,13 +83,20 @@ import kotlin.math.abs
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
+        AppUpdateManager.registerInstallHost(this)
         AppUpdateManager.installPending(this)
+    }
+
+    override fun onPause() {
+        AppUpdateManager.unregisterInstallHost(this)
+        super.onPause()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val settingsRepository = SettingsRepository(applicationContext)
         DayReminderScheduler.createNotificationChannel(applicationContext)
+        AppUpdateManager.createNotificationChannel(applicationContext)
         setContent {
             val settingsValue by settingsRepository.observeSettings()
                 .map<com.quenan.duji.data.settings.SettingsData, com.quenan.duji.data.settings.SettingsData?> { it }
