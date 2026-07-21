@@ -774,7 +774,7 @@ fun ThoseDaysScreen(
                                 )
                                 ArrowPreference(
                                     title = "提醒时间",
-                                    summary = "每天 ${reminderHour.toString().padStart(2, '0')}:${reminderMinute.toString().padStart(2, '0')}",
+                                    summary = "${reminderHour.toString().padStart(2, '0')}:${reminderMinute.toString().padStart(2, '0')}",
                                     onClick = { showReminderTimeDialog = true },
                                     startAction = {
                                         Icon(
