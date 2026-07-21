@@ -145,7 +145,8 @@ fun CheckInScreen(
     var selectedEmoji by remember { mutableStateOf(DEFAULT_CHECK_IN_EMOJI) }
     var customEmojiText by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(defaultCheckInColor) }
-    var selectedCard by remember { mutableStateOf<CheckInCardUiModel?>(null) }
+    var selectedCardId by remember { mutableStateOf<Long?>(null) }
+    val selectedCard = cardModels.firstOrNull { card -> card.item.id == selectedCardId }
     var editingItem by remember { mutableStateOf<CheckInItem?>(null) }
     var showDetailBottomSheet by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
@@ -221,7 +222,7 @@ fun CheckInScreen(
                                 }
                             },
                             onClick = {
-                                selectedCard = card
+                                selectedCardId = card.item.id
                                 showDetailBottomSheet = true
                             },
                         )
@@ -376,7 +377,7 @@ fun CheckInScreen(
                 }
             },
             onDismissRequest = { showDetailBottomSheet = false },
-            onDismissFinished = { selectedCard = null },
+            onDismissFinished = { selectedCardId = null },
         ) {
             CheckInDetailContent(
                 card = detailCard,
@@ -397,7 +398,7 @@ fun CheckInScreen(
     if (showDeleteConfirmDialog && selectedCard != null) {
         WindowDialog(
             title = "删除打卡项",
-            summary = "确认删除 ${selectedCard?.item?.name} 及其全部打卡记录吗？",
+            summary = "确认删除 ${selectedCard.item.name} 及其全部打卡记录吗？",
             show = true,
             onDismissRequest = { showDeleteConfirmDialog = false },
         ) {
@@ -413,13 +414,11 @@ fun CheckInScreen(
                 TextButton(
                     text = "删除",
                     onClick = {
-                        selectedCard?.let { card ->
-                            viewModel.deleteItem(card.item.id)
-                            showNotice("删除成功")
-                        }
+                        viewModel.deleteItem(selectedCard.item.id)
+                        showNotice("删除成功")
                         showDeleteConfirmDialog = false
                         showDetailBottomSheet = false
-                        selectedCard = null
+                        selectedCardId = null
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -596,7 +595,9 @@ private fun CheckInDetailContent(
             monthTitleToWeekSpacing = 8.dp,
             onDateSelected = {},
             dateLongPressAction = { date ->
-                if (date in card.recordDates) {
+                if (date > LocalDate.now()) {
+                    null
+                } else if (date in card.recordDates) {
                     CalendarDateLongPressAction(
                         text = "取消打卡",
                         onClick = { onCancelCheckIn(date) },
